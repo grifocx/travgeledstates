@@ -47,9 +47,16 @@ const MapSection = ({
   const [isStateVisited, setIsStateVisited] = useState(false);
 
   // Convert visitedStates array to a map for easy lookup
-  const visitedStatesMap = new Map(
-    visitedStates.map(vs => [vs.stateId, vs.visited])
-  );
+  const visitedStatesMap = new Map();
+  
+  // Debugging - log the visitedStates array
+  console.log("Visited States:", visitedStates);
+  
+  // Process the visitedStates array
+  visitedStates.forEach((vs: VisitedState) => {
+    console.log(`Setting ${vs.stateId} to ${vs.visited}`);
+    visitedStatesMap.set(vs.stateId, vs.visited);
+  });
 
   useEffect(() => {
     if (selectedState) {

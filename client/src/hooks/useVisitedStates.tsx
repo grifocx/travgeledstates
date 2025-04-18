@@ -5,18 +5,25 @@ import { Activity, State, VisitedState } from "@shared/schema";
 import { usaStatesData } from "@/lib/usaStatesData";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
-
-// Generate a simple user ID for the session (in a real app, this would be authenticated)
-const getUserId = () => {
-  let userId = localStorage.getItem("user_id");
-  if (!userId) {
-    userId = `user_${Math.random().toString(36).substring(2, 9)}`;
-    localStorage.setItem("user_id", userId);
-  }
-  return userId;
-};
+import { useAuth } from "./use-auth";
 
 export const useVisitedStates = () => {
+  // Get user from auth context
+  const { user } = useAuth();
+  // Use the actual user ID if authenticated, otherwise use localStorage for anonymous tracking
+  const getUserId = () => {
+    if (user?.id) {
+      return `user_${user.id}`;
+    }
+    
+    let userId = localStorage.getItem("user_id");
+    if (!userId) {
+      userId = `user_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem("user_id", userId);
+    }
+    return userId;
+  };
+  
   const userId = getUserId();
   const queryClient = useQueryClient();
   

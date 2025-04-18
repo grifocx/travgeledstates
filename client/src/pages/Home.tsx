@@ -6,6 +6,7 @@ import StatesList from "@/components/StatesList";
 import Footer from "@/components/Footer";
 import ShareModal from "@/components/ShareModal";
 import { useVisitedStates } from "@/hooks/useVisitedStates";
+import { useAuth } from "@/hooks/use-auth";
 
 const Home = () => {
   const [showShareModal, setShowShareModal] = useState(false);
