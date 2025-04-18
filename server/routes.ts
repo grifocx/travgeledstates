@@ -21,9 +21,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/visited-states/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
+      console.log(`Fetching visited states for userId: ${userId}`);
+      
+      // Handle the case when userId is undefined
+      if (!userId) {
+        console.log("WARNING: userId is undefined or empty");
+        return res.json([]);
+      }
+      
       const visitedStates = await storage.getVisitedStates(userId);
+      console.log(`Found ${visitedStates.length} visited states for ${userId}`);
+      
+      // Log details of visited states for debugging
+      if (visitedStates.length > 0) {
+        console.log("First few visited states:");
+        visitedStates.slice(0, 3).forEach(vs => {
+          console.log(`  ${vs.stateId}: visited=${vs.visited}`);
+        });
+      }
+      
       res.json(visitedStates);
     } catch (error) {
+      console.error(`Error fetching visited states for ${req.params.userId}:`, error);
       res.status(500).json({ message: "Failed to fetch visited states", error: (error as Error).message });
     }
   });
@@ -37,24 +56,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request data", error: result.error });
       }
       
-      const { stateId, userId, visited, visitedAt } = result.data;
+      console.log("Toggle request body:", req.body);
+      let { stateId, userId, visited, visitedAt } = result.data;
       
+      // Ensure visited is a boolean
+      if (typeof visited !== 'boolean') {
+        console.log(`Warning: visited is not a boolean (${typeof visited}), converting to boolean`);
+        visited = visited === 'true' || visited === true || visited === 1;
+      }
+      
+      // Store the original userId before it gets normalized in the storage class
+      const originalUserId = userId;
+      
+      // Toggle the state
       const visitedState = await storage.toggleStateVisited(stateId, userId, visited);
       
-      // Add activity
+      // Add activity - ensure we use the same userId format as was used for the toggle
       const state = await storage.getStateById(stateId);
       if (state) {
         await storage.addActivity({
-          userId,
+          userId: visitedState.userId, // Use the userId from the toggled state
           stateId,
           stateName: state.name,
           action: visited ? "visited" : "unvisited",
-          timestamp: visitedAt
+          timestamp: visitedAt || new Date().toISOString()
         });
       }
       
+      console.log(`Successfully toggled state ${stateId} for ${userId} to ${visited}`);
       res.json(visitedState);
     } catch (error) {
+      console.error("Error toggling state:", error);
       res.status(500).json({ message: "Failed to toggle state", error: (error as Error).message });
     }
   });

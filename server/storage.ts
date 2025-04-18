@@ -36,25 +36,52 @@ export class DatabaseStorage implements IStorage {
 
   // Get visited states for a user
   async getVisitedStates(userId: string): Promise<VisitedState[]> {
-    return db.select().from(visitedStates).where(eq(visitedStates.userId, userId));
+    // Normalize userId to handle various formats (same logic as in toggleStateVisited)
+    let normalizedUserId = userId;
+    if (!userId) {
+      console.log("Warning: getVisitedStates called with empty userId");
+      return []; // Return empty array for empty userId
+    }
+    
+    if (!normalizedUserId.startsWith('user_') && !isNaN(Number(normalizedUserId))) {
+      normalizedUserId = `user_${normalizedUserId}`;
+      console.log(`Normalized userId from ${userId} to ${normalizedUserId} in getVisitedStates`);
+    }
+    
+    console.log(`Getting visited states for normalized userId: ${normalizedUserId}`);
+    const results = await db.select().from(visitedStates).where(eq(visitedStates.userId, normalizedUserId));
+    console.log(`Found ${results.length} visited states`);
+    return results;
   }
 
   // Toggle state visited status
   async toggleStateVisited(stateId: string, userId: string, visited: boolean): Promise<VisitedState> {
+    console.log(`Storage: Toggling state ${stateId} for user ${userId} to ${visited}`);
+    
+    // Normalize userId to handle various formats
+    let normalizedUserId = userId;
+    if (!normalizedUserId.startsWith('user_') && !isNaN(Number(normalizedUserId))) {
+      normalizedUserId = `user_${normalizedUserId}`;
+      console.log(`Normalized userId from ${userId} to ${normalizedUserId}`);
+    }
+    
     // Check if the record already exists
     const existing = await db.select()
       .from(visitedStates)
       .where(
         and(
           eq(visitedStates.stateId, stateId),
-          eq(visitedStates.userId, userId)
+          eq(visitedStates.userId, normalizedUserId)
         )
       );
+    
+    console.log(`Found ${existing.length} existing records for ${stateId} and ${normalizedUserId}`);
     
     const timestamp = new Date().toISOString();
     
     if (existing.length > 0) {
       // Update existing record
+      console.log(`Updating existing record for ${stateId}`);
       const [updated] = await db.update(visitedStates)
         .set({ 
           visited, 
@@ -63,7 +90,7 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             eq(visitedStates.stateId, stateId),
-            eq(visitedStates.userId, userId)
+            eq(visitedStates.userId, normalizedUserId)
           )
         )
         .returning();
@@ -71,10 +98,11 @@ export class DatabaseStorage implements IStorage {
       return updated;
     } else {
       // Insert new record
+      console.log(`Inserting new record for ${stateId} and user ${normalizedUserId}`);
       const [newVisit] = await db.insert(visitedStates)
         .values({
           stateId,
-          userId,
+          userId: normalizedUserId, // Use normalized ID
           visited,
           visitedAt: timestamp
         })
@@ -92,11 +120,26 @@ export class DatabaseStorage implements IStorage {
 
   // Get activities for a user
   async getActivities(userId: string, limit: number = 10): Promise<Activity[]> {
-    return db.select()
+    // Normalize userId to handle various formats (same logic as in other methods)
+    let normalizedUserId = userId;
+    if (!userId) {
+      console.log("Warning: getActivities called with empty userId");
+      return []; // Return empty array for empty userId
+    }
+    
+    if (!normalizedUserId.startsWith('user_') && !isNaN(Number(normalizedUserId))) {
+      normalizedUserId = `user_${normalizedUserId}`;
+      console.log(`Normalized userId from ${userId} to ${normalizedUserId} in getActivities`);
+    }
+    
+    const results = await db.select()
       .from(activities)
-      .where(eq(activities.userId, userId))
+      .where(eq(activities.userId, normalizedUserId))
       .orderBy(desc(activities.timestamp))
       .limit(limit);
+      
+    console.log(`Found ${results.length} activities for user ${normalizedUserId}`);
+    return results;
   }
 
   // Add a new activity

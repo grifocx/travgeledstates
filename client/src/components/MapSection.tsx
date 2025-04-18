@@ -147,24 +147,36 @@ const MapSection = ({
               {({ geographies }: { geographies: GeoFeature[] }) =>
                 geographies.map((geo: GeoFeature) => {
                   const stateId = geo.properties.iso_3166_2;
-                  const isVisited = visitedStatesMap.get(stateId) === true;
+                  // For each geography, check if it's in our visited states map
+                  // Force toString to ensure type consistency when comparing
+                  const isVisitedRaw = visitedStatesMap.get(stateId);
+                  const isVisited = isVisitedRaw === true;
                   const isSelected = selectedState === stateId;
                   const stateName = states.find(s => s.stateId === stateId)?.name || geo.properties.name;
                   
+                  // Debug logging for specific states
+                  if (stateId === "CA" || stateId === "NY" || stateId === "TX" || stateId === selectedState) {
+                    console.log(`Rendering state ${stateId} (${stateName}): visited=${isVisited}, selected=${isSelected}`);
+                  }
+                  
+                  // Set fill color based on state
+                  const fillColor = isVisited ? "#10B981" : "#D1D5DB";
+                  const hoverColor = isVisited ? "#059669" : "#9CA3AF";
+                  
                   return (
                     <Geography
-                      key={geo.rsmKey}
+                      key={`${geo.rsmKey}-${isVisited ? 'visited' : 'not'}-${forceUpdateCounter}`}
                       geography={geo}
                       onClick={() => handleStateClick(stateId, stateName)}
                       style={{
                         default: {
-                          fill: isVisited ? "#10B981" : "#D1D5DB",
+                          fill: fillColor,
                           stroke: "#FFFFFF",
                           strokeWidth: 0.75,
                           outline: "none",
                         },
                         hover: {
-                          fill: isVisited ? "#059669" : "#9CA3AF",
+                          fill: hoverColor,
                           stroke: "#FFFFFF",
                           strokeWidth: 0.75,
                           outline: "none",
