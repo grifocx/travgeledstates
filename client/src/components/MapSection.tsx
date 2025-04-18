@@ -230,7 +230,19 @@ const MapSection = ({
                     <Geography
                       key={`${geo.rsmKey}-${stateVisited ? 'visited' : 'not'}`}
                       geography={geo}
-                      onClick={() => handleStateToggle(stateId)}
+                      onClick={() => {
+                        if (stateId) {
+                          console.log(`Direct click on state with ID: ${stateId}`);
+                          handleStateToggle(stateId);
+                        } else {
+                          console.error("Clicked on a state without ID");
+                          toast({
+                            title: "Error",
+                            description: "Could not identify the clicked state",
+                            variant: "destructive"
+                          });
+                        }
+                      }}
                       style={{
                         default: {
                           fill: fillColor,

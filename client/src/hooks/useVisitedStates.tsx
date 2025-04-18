@@ -113,10 +113,34 @@ export const useVisitedStates = () => {
     }
   }, [visitedStates]);
   
-  // Toggle visited state mutation with enhanced error handling
+  // Toggle visited state mutation with enhanced error handling and explicit parameter passing
   const toggleVisitedMutation = useMutation({
-    mutationFn: async ({ stateId, visited }: { stateId: string, visited: boolean }) => {
-      const visitedAt = new Date().toISOString();
+    mutationFn: async ({ 
+      stateId, 
+      userId: userIdParam, 
+      visited, 
+      visitedAt: visitedAtParam 
+    }: { 
+      stateId: string; 
+      userId?: string;
+      visited: boolean; 
+      visitedAt?: string;
+    }) => {
+      // Ensure we have required parameters
+      if (!stateId) {
+        throw new Error("Missing required stateId parameter");
+      }
+      
+      // Use provided values or fallbacks
+      const effectiveUserId = userIdParam || userId;
+      const effectiveVisitedAt = visitedAtParam || new Date().toISOString();
+      
+      console.log(`toggleVisitedMutation called with:
+        stateId: ${stateId}
+        userId: ${effectiveUserId}
+        visited: ${visited}
+        visitedAt: ${effectiveVisitedAt}
+      `);
       
       // Update local state immediately for quick UI feedback
       setLocalVisitedStates(prev => {
@@ -126,10 +150,6 @@ export const useVisitedStates = () => {
         console.log(`Local state updated: ${stateId} is now ${visited ? 'VISITED' : 'NOT VISITED'}`);
         console.log(`Local map now has ${newMap.size} entries`);
         
-        // Force component update with our local state
-        const forceUpdate = queryClient.getQueryData<number>(['forceUpdate']) || 0;
-        queryClient.setQueryData(['forceUpdate'], forceUpdate + 1);
-        
         return newMap;
       });
       
@@ -137,9 +157,9 @@ export const useVisitedStates = () => {
       const optimisticVisitedState: VisitedState = {
         id: Math.floor(Math.random() * 1000000), // Temporary ID
         stateId,
-        userId,
+        userId: effectiveUserId,
         visited,
-        visitedAt,
+        visitedAt: effectiveVisitedAt,
         notes: null
       };
       
@@ -164,9 +184,8 @@ export const useVisitedStates = () => {
       try {
         const response = await apiRequest("POST", "/api/visited-states/toggle", {
           stateId,
-          userId,
-          visited,
-          visitedAt
+          userId: effectiveUserId,
+          visited
         });
         
         if (!response.ok) {
@@ -294,12 +313,11 @@ export const useVisitedStates = () => {
     // Ensure we have a valid stateId before mutating
     const visitedAt = new Date().toISOString();
     
-    // Then call the mutation with all required fields
+    // Then call the mutation with required fields only
     toggleVisitedMutation.mutate({ 
       stateId, 
       userId, 
-      visited, 
-      visitedAt 
+      visited
     });
     
     console.log(`Mutation called with: stateId=${stateId}, userId=${userId}, visited=${visited}`);
