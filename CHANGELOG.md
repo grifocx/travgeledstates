@@ -1,4 +1,4 @@
-# USA State Tracker - Version 1.0.0
+# USA State Tracker - Version 1.1.0
 
 ## Overview
 The USA State Tracker is an interactive web application that allows users to visually track which states they have visited across the United States. This project provides a rich, interactive experience with a map-based visualization, user profiles, and data persistence.
@@ -24,7 +24,7 @@ The USA State Tracker is an interactive web application that allows users to vis
   - Color-coded states (green for visited, gray for unvisited)
   - Hover effects for better user interaction
   - State selection with detailed information display
-  - Zoom and pan controls for map navigation
+  - Clean, simplified interface for intuitive navigation
 
 - **Visited States Management**
   - One-click toggle between visited/unvisited status
@@ -36,7 +36,8 @@ The USA State Tracker is an interactive web application that allows users to vis
   - Visual representation of visited states percentage
   - Recent activity timeline
   - Progress tracking indicators
-  - Share functionality to generate sharable links
+  - Share functionality with database-backed image storage
+  - Dedicated shareable URLs for cross-browser compatibility
 
 - **Database Integration**
   - PostgreSQL database using Drizzle ORM
@@ -94,6 +95,22 @@ The USA State Tracker is an interactive web application that allows users to vis
 - Indexing for query performance
 
 ## Release Notes
+
+### Version 1.1.0 (2025-04-18)
+- Improved map sharing functionality:
+  - Replaced client-side clipboard-based sharing with server-side image storage
+  - Implemented database storage for map images with unique shareable URLs
+  - Added enhanced UI for viewing shared maps including "View in new tab" option
+  - Fixed cross-browser compatibility issues, especially in Safari
+  - Increased server request size limit to 50MB to handle image payloads
+- Optimized image sharing performance:
+  - Reduced image quality to 50% to minimize payload size
+  - Decreased image dimensions to 600x450 pixels
+  - Changed format from PNG to JPEG for more efficient compression
+  - Updated download file extension to match JPEG format
+- Simplified map interface:
+  - Removed unused zoom controls for a cleaner UI
+  - Cleaned up related code for better maintainability
 
 ### Version 1.0.0 (2025-04-18)
 - Fixed map color persistence issues with the following improvements:

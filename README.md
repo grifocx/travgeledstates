@@ -1,4 +1,4 @@
-# USA State Tracker v1.0.0
+# USA State Tracker v1.1.0
 
 An interactive web application to track and visualize which US states you have visited.
 
@@ -53,7 +53,7 @@ npm run dev
 
 ### Interactive Map
 - Color-coded visualization of visited and unvisited states
-- Zoom and pan controls
+- Simple and clean interface
 - Click on states to mark them as visited/unvisited
 
 ### User Authentication
@@ -67,8 +67,9 @@ npm run dev
 - Track progress over time
 
 ### Sharing
-- Generate a sharable link to show others your traveled states
-- View others' visited states through their shared links
+- Generate a shareable link with database-stored map images
+- View and download others' visited states through their shared links
+- Open shared maps in new tabs with dedicated URLs
 
 ## Usage
 
@@ -93,9 +94,17 @@ npm run dev
 - **Database**: PostgreSQL with Drizzle ORM
 - **Visualization**: React Simple Maps
 
-## Latest Release - v1.0.0
+## Latest Release - v1.1.0
 
 ### Major Updates
+- Improved map sharing with database-stored images instead of clipboard-based sharing
+- Added dedicated shareable URLs with improved cross-browser compatibility
+- Optimized image size and quality for faster sharing and lower bandwidth usage
+- Enhanced server configuration to handle larger image payloads
+- Simplified map interface by removing unused zoom controls
+- Fixed issues with Safari browser compatibility for sharing
+
+### Previous Release - v1.0.0
 - Fixed state tracking functionality for complete UI/database synchronization
 - Improved state coloring persistence across sessions
 - Enhanced error handling throughout the application
