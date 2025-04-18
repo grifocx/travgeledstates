@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Header from "@/components/Header";
 import MapSection from "@/components/MapSection";
 import StateDashboard from "@/components/StateDashboard";
@@ -7,11 +7,15 @@ import Footer from "@/components/Footer";
 import ShareModal from "@/components/ShareModal";
 import { useVisitedStates } from "@/hooks/useVisitedStates";
 import { useAuth } from "@/hooks/use-auth";
+import * as htmlToImage from "html-to-image";
+import { toast } from "@/hooks/use-toast";
 
 const Home = () => {
   const [showShareModal, setShowShareModal] = useState(false);
-  const [shareUrl, setShareUrl] = useState("");
+  const [mapImageUrl, setMapImageUrl] = useState<string | null>(null);
+  const [isCapturingMap, setIsCapturingMap] = useState(false);
   const [selectedState, setSelectedState] = useState<string | null>(null);
+  const mapSectionRef = useRef<HTMLDivElement>(null);
   
   const { 
     states, 
@@ -34,23 +38,62 @@ const Home = () => {
     }
   }, [visitedStates]);
 
-  // Generate a share URL when the modal is opened
-  useEffect(() => {
-    if (showShareModal) {
-      const userId = localStorage.getItem("user_id") || "anonymous";
-      const stateIds = visitedStates
-        .filter(vs => vs.visited)
-        .map(vs => vs.stateId)
-        .join(',');
-      
-      // Create a shareable URL with visited states encoded
-      const shareCode = btoa(`${userId}:${stateIds}`);
-      setShareUrl(`${window.location.origin}?share=${shareCode}`);
+  // Capture map image when the modal is opened
+  const captureMapAsImage = useCallback(async () => {
+    if (!mapSectionRef.current) {
+      console.error("Map section ref is not available");
+      return null;
     }
-  }, [showShareModal, visitedStates]);
 
-  const handleShare = () => {
+    try {
+      setIsCapturingMap(true);
+      
+      // Find the map container within the map section (using the specific ID)
+      const mapContainer = mapSectionRef.current.querySelector("#usa-map-container");
+      if (!mapContainer) {
+        throw new Error("Map container not found");
+      }
+      
+      // Capture the map as a data URL
+      const dataUrl = await htmlToImage.toPng(mapContainer as HTMLElement, {
+        quality: 0.95,
+        backgroundColor: "#ffffff",
+        // Optional: Filter out any external resources that might cause CORS issues
+        filter: (node) => {
+          // Skip SVG <use> elements that reference external resources
+          if (node instanceof SVGUseElement && node.href.baseVal.startsWith('http')) {
+            return false;
+          }
+          return true;
+        }
+      });
+      
+      setMapImageUrl(dataUrl);
+      return dataUrl;
+    } catch (error) {
+      console.error("Error capturing map image:", error);
+      toast({
+        title: "Error capturing map",
+        description: "Unable to create a shareable image. Please try again.",
+        variant: "destructive"
+      });
+      return null;
+    } finally {
+      setIsCapturingMap(false);
+    }
+  }, [mapSectionRef]);
+
+  const handleShare = async () => {
     setShowShareModal(true);
+    const imageUrl = await captureMapAsImage();
+    
+    if (!imageUrl) {
+      toast({
+        title: "Error",
+        description: "Could not capture map image. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleStateClick = (stateId: string) => {
@@ -64,15 +107,17 @@ const Home = () => {
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
         <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-          <MapSection 
-            states={states}
-            visitedStates={visitedStates}
-            onStateClick={handleStateClick}
-            selectedState={selectedState}
-            toggleStateVisited={toggleStateVisited}
-            loading={loading}
-            isStateVisited={isStateVisited}
-          />
+          <div ref={mapSectionRef} className="lg:col-span-2 mb-8 lg:mb-0">
+            <MapSection 
+              states={states}
+              visitedStates={visitedStates}
+              onStateClick={handleStateClick}
+              selectedState={selectedState}
+              toggleStateVisited={toggleStateVisited}
+              loading={loading}
+              isStateVisited={isStateVisited}
+            />
+          </div>
           
           <StateDashboard 
             stats={stats}
@@ -97,7 +142,7 @@ const Home = () => {
       <ShareModal 
         isOpen={showShareModal} 
         onClose={() => setShowShareModal(false)}
-        shareUrl={shareUrl}
+        mapImageUrl={mapImageUrl}
       />
     </div>
   );

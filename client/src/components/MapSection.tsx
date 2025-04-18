@@ -212,7 +212,12 @@ const MapSection = ({
       <div className="bg-white rounded-lg shadow p-4 sm:p-6">
         <h2 className="text-xl font-semibold mb-4">Your USA Travel Map</h2>
         
-        <div className="relative aspect-[1.5/1] overflow-hidden border border-gray-200 rounded-lg">
+        <div className="relative aspect-[1.5/1] overflow-hidden border border-gray-200 rounded-lg" id="usa-map-container">
+          {/* Watermark - Only visible in screenshots */}
+          <div className="absolute bottom-3 right-3 z-10 bg-white bg-opacity-80 px-3 py-1.5 rounded text-sm text-gray-700 shadow-sm" id="map-watermark">
+            <div className="font-medium">USA States Tracker</div>
+          </div>
+
           <ComposableMap
             projection="geoAlbersUsa"
             projectionConfig={{
@@ -222,6 +227,7 @@ const MapSection = ({
               width: "100%",
               height: "auto"
             }}
+            data-html2canvas-ignore-scrolling="true"
           >
             <Geographies geography={geoUrl}>
               {({ geographies }: { geographies: GeoFeature[] }) =>
