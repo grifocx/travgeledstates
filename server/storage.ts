@@ -3,10 +3,13 @@ import {
   VisitedState, InsertVisitedState,
   Activity, InsertActivity,
   SharedMap, InsertSharedMap,
-  states, visitedStates, activities, sharedMaps
+  Badge, InsertBadge,
+  UserBadge, InsertUserBadge,
+  BadgeCriteria,
+  states, visitedStates, activities, sharedMaps, badges, userBadges
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray, sql } from "drizzle-orm";
 
 export interface IStorage {
   // State methods
@@ -25,6 +28,16 @@ export interface IStorage {
   // Shared maps methods
   saveSharedMap(userId: string, imageData: string): Promise<SharedMap>;
   getSharedMapByCode(shareCode: string): Promise<SharedMap | undefined>;
+  
+  // Badge methods
+  getAllBadges(): Promise<Badge[]>;
+  getBadgeById(badgeId: number): Promise<Badge | undefined>;
+  getBadgesByCategory(category: string): Promise<Badge[]>;
+  
+  // User badge methods
+  getUserBadges(userId: string): Promise<{badge: Badge, userBadge: UserBadge}[]>;
+  awardBadgeToUser(userId: string, badgeId: number, metadata?: any): Promise<UserBadge>;
+  checkForNewBadges(userId: string): Promise<Badge[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -200,6 +213,162 @@ export class DatabaseStorage implements IStorage {
     }
     
     return result;
+  }
+
+  // BADGE METHODS
+  
+  // Get all badges
+  async getAllBadges(): Promise<Badge[]> {
+    return db.select().from(badges).orderBy(badges.tier, badges.name);
+  }
+  
+  // Get a badge by ID
+  async getBadgeById(badgeId: number): Promise<Badge | undefined> {
+    const results = await db.select().from(badges).where(eq(badges.id, badgeId));
+    return results.length > 0 ? results[0] : undefined;
+  }
+  
+  // Get badges by category
+  async getBadgesByCategory(category: string): Promise<Badge[]> {
+    return db.select().from(badges).where(eq(badges.category, category)).orderBy(badges.tier, badges.name);
+  }
+  
+  // Get badges for a user with badge details
+  async getUserBadges(userId: string): Promise<{badge: Badge, userBadge: UserBadge}[]> {
+    // Normalize userId
+    let normalizedUserId = userId;
+    if (!normalizedUserId.startsWith('user_') && !isNaN(Number(normalizedUserId))) {
+      normalizedUserId = `user_${normalizedUserId}`;
+    }
+    
+    const result = await db.select({
+      badge: badges,
+      userBadge: userBadges
+    })
+    .from(userBadges)
+    .innerJoin(badges, eq(userBadges.badgeId, badges.id))
+    .where(eq(userBadges.userId, normalizedUserId))
+    .orderBy(desc(userBadges.earnedAt));
+    
+    return result;
+  }
+  
+  // Award a badge to a user
+  async awardBadgeToUser(userId: string, badgeId: number, metadata?: any): Promise<UserBadge> {
+    // Normalize userId
+    let normalizedUserId = userId;
+    if (!normalizedUserId.startsWith('user_') && !isNaN(Number(normalizedUserId))) {
+      normalizedUserId = `user_${normalizedUserId}`;
+    }
+    
+    // Check if user already has this badge
+    const existingBadges = await db.select()
+      .from(userBadges)
+      .where(
+        and(
+          eq(userBadges.userId, normalizedUserId),
+          eq(userBadges.badgeId, badgeId)
+        )
+      );
+    
+    if (existingBadges.length > 0) {
+      // User already has this badge, return existing
+      return existingBadges[0];
+    }
+    
+    // Award new badge
+    const [newUserBadge] = await db.insert(userBadges)
+      .values({
+        userId: normalizedUserId,
+        badgeId,
+        metadata: metadata || undefined
+      })
+      .returning();
+    
+    // Add an activity for earning the badge
+    const badge = await this.getBadgeById(badgeId);
+    if (badge) {
+      await this.addActivity({
+        userId: normalizedUserId,
+        stateId: 'badge', // Special activity type
+        stateName: badge.name,
+        action: 'earned_badge',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    return newUserBadge;
+  }
+  
+  // Check for new badges a user might have earned
+  async checkForNewBadges(userId: string): Promise<Badge[]> {
+    // Normalize userId
+    let normalizedUserId = userId;
+    if (!normalizedUserId.startsWith('user_') && !isNaN(Number(normalizedUserId))) {
+      normalizedUserId = `user_${normalizedUserId}`;
+    }
+    
+    // Get user's visited states
+    const userVisitedStates = await this.getVisitedStates(normalizedUserId);
+    const visitedStatesCount = userVisitedStates.filter(state => state.visited).length;
+    
+    // Get all badges user hasn't earned yet
+    const userBadgeIds = (await db.select({id: userBadges.badgeId})
+      .from(userBadges)
+      .where(eq(userBadges.userId, normalizedUserId)))
+      .map(row => row.id);
+    
+    const allBadges = await this.getAllBadges();
+    const unearnedBadges = allBadges.filter(badge => !userBadgeIds.includes(badge.id));
+    
+    // Check each badge criteria
+    const newlyEarnedBadges: Badge[] = [];
+    
+    for (const badge of unearnedBadges) {
+      const criteria = badge.criteria as any; // Type as any for now
+      
+      if (criteria.type === 'states_count' && visitedStatesCount >= criteria.value) {
+        // User has visited enough states to earn this badge
+        await this.awardBadgeToUser(normalizedUserId, badge.id, {
+          statesCount: visitedStatesCount,
+          earnedAt: new Date().toISOString()
+        });
+        newlyEarnedBadges.push(badge);
+      }
+      else if (criteria.type === 'region_complete') {
+        // Check if all states in a region are visited
+        const regionStates = criteria.value as string[];
+        const visitedRegionStates = userVisitedStates
+          .filter(vs => vs.visited && regionStates.includes(vs.stateId))
+          .map(vs => vs.stateId);
+        
+        if (visitedRegionStates.length === regionStates.length) {
+          await this.awardBadgeToUser(normalizedUserId, badge.id, {
+            regionStates: regionStates,
+            earnedAt: new Date().toISOString()
+          });
+          newlyEarnedBadges.push(badge);
+        }
+      }
+      else if (criteria.type === 'specific_states') {
+        // Check if specific states are visited
+        const requiredStates = criteria.value as string[];
+        const visitedRequiredStates = userVisitedStates
+          .filter(vs => vs.visited && requiredStates.includes(vs.stateId))
+          .map(vs => vs.stateId);
+        
+        if (requiredStates.every(state => visitedRequiredStates.includes(state))) {
+          await this.awardBadgeToUser(normalizedUserId, badge.id, {
+            specificStates: requiredStates,
+            earnedAt: new Date().toISOString()
+          });
+          newlyEarnedBadges.push(badge);
+        }
+      }
+      // Other criteria types can be implemented here
+    }
+    
+    return newlyEarnedBadges;
   }
 }
 

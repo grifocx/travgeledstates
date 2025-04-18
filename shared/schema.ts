@@ -119,6 +119,39 @@ export const insertSharedMapSchema = createInsertSchema(sharedMaps).pick({
   shareCode: true
 });
 
+// Badge insert schemas
+export const insertBadgeSchema = createInsertSchema(badges).pick({
+  name: true,
+  description: true,
+  imageUrl: true,
+  criteria: true,
+  tier: true,
+  category: true
+});
+
+export const insertUserBadgeSchema = createInsertSchema(userBadges).pick({
+  userId: true,
+  badgeId: true,
+  metadata: true
+});
+
+// Define badge criteria types for better type safety
+export const badgeCriteriaSchema = z.object({
+  type: z.enum([
+    "states_count", // Based on number of states visited
+    "region_complete", // Based on completing a specific region
+    "specific_states", // Based on visiting specific states
+    "time_period", // Based on time period (e.g., states visited in a day)
+    "pattern" // Based on patterns (alphabetical, etc.)
+  ]),
+  value: z.union([
+    z.number(),
+    z.string(),
+    z.array(z.string()),
+    z.record(z.string(), z.any())
+  ])
+});
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -135,3 +168,10 @@ export type InsertActivity = z.infer<typeof insertActivitySchema>;
 
 export type SharedMap = typeof sharedMaps.$inferSelect;
 export type InsertSharedMap = z.infer<typeof insertSharedMapSchema>;
+
+export type Badge = typeof badges.$inferSelect;
+export type InsertBadge = z.infer<typeof insertBadgeSchema>;
+export type BadgeCriteria = z.infer<typeof badgeCriteriaSchema>;
+
+export type UserBadge = typeof userBadges.$inferSelect;
+export type InsertUserBadge = z.infer<typeof insertUserBadgeSchema>;
