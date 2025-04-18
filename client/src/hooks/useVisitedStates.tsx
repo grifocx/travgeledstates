@@ -68,15 +68,24 @@ export const useVisitedStates = () => {
   });
   
   // Fetch visited states with type safety - only if we have a userId
-  const { 
-    data: visitedStates = [],
-    isLoading: visitedStatesLoading,
-    error: visitedStatesError,
-  } = useQuery<VisitedState[], Error, VisitedState[]>({
+  const visitedStatesQuery = useQuery<VisitedState[], Error, VisitedState[]>({
     queryKey: [`/api/visited-states/${userId}`],
     refetchOnWindowFocus: true,
     enabled: !!userId, // Only run query if userId is available
   });
+  
+  // Extract data, loading, and error states from the query
+  const visitedStates = visitedStatesQuery.data || [];
+  const visitedStatesLoading = visitedStatesQuery.isLoading;
+  const visitedStatesError = visitedStatesQuery.error;
+  
+  // Add debugging to track when visitedStates change
+  useEffect(() => {
+    console.log(`useVisitedStates hook: Visited states updated, now has ${visitedStates.length} items`);
+    if (visitedStates.length > 0) {
+      console.log("Sample visited state:", visitedStates[0]);
+    }
+  }, [visitedStates]);
   
   // Fetch activities with type safety - only if we have a userId
   const { 
@@ -93,6 +102,35 @@ export const useVisitedStates = () => {
   const toggleVisitedMutation = useMutation({
     mutationFn: async ({ stateId, visited }: { stateId: string, visited: boolean }) => {
       const visitedAt = new Date().toISOString();
+      
+      // First perform the optimistic update before the actual API call
+      const optimisticVisitedState: VisitedState = {
+        id: Math.floor(Math.random() * 1000000), // Temporary ID
+        stateId,
+        userId,
+        visited,
+        visitedAt,
+        notes: null
+      };
+      
+      // Apply optimistic update immediately
+      const cachedData = queryClient.getQueryData<VisitedState[]>([`/api/visited-states/${userId}`]) || [];
+      const existingIndex = cachedData.findIndex(vs => vs.stateId === stateId);
+      
+      // Create a new cache entry
+      let newCacheData: VisitedState[];
+      if (existingIndex >= 0) {
+        newCacheData = [...cachedData];
+        newCacheData[existingIndex] = optimisticVisitedState;
+      } else {
+        newCacheData = [...cachedData, optimisticVisitedState];
+      }
+      
+      // Apply the optimistic update
+      queryClient.setQueryData([`/api/visited-states/${userId}`], newCacheData);
+      console.log("Applied optimistic update:", newCacheData);
+      
+      // Then make the actual API call
       const response = await apiRequest("POST", "/api/visited-states/toggle", {
         stateId,
         userId,
@@ -102,28 +140,7 @@ export const useVisitedStates = () => {
       return response.json();
     },
     onSuccess: (newVisitedState) => {
-      // Optimistically update the cache to reflect the change immediately
-      queryClient.setQueryData(
-        [`/api/visited-states/${userId}`],
-        (oldData: VisitedState[] | undefined) => {
-          if (!oldData) return [newVisitedState];
-          
-          // Check if this state already exists in the cache
-          const existingIndex = oldData.findIndex(vs => vs.stateId === newVisitedState.stateId);
-          
-          if (existingIndex >= 0) {
-            // Replace the existing entry
-            const newData = [...oldData];
-            newData[existingIndex] = newVisitedState;
-            return newData;
-          } else {
-            // Add the new entry
-            return [...oldData, newVisitedState];
-          }
-        }
-      );
-      
-      // Still invalidate the queries to ensure data is fresh
+      // The API call was successful, we can invalidate queries now
       queryClient.invalidateQueries({ queryKey: [`/api/visited-states/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/activities/${userId}`] });
       
@@ -134,6 +151,9 @@ export const useVisitedStates = () => {
       });
     },
     onError: (error) => {
+      // Revert the optimistic update on error
+      queryClient.invalidateQueries({ queryKey: [`/api/visited-states/${userId}`] });
+      
       toast({
         title: "Error",
         description: `Failed to update state: ${error}`,

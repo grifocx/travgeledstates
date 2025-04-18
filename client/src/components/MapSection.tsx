@@ -46,21 +46,34 @@ const MapSection = ({
   const [selectedStateName, setSelectedStateName] = useState("");
   const [isStateVisited, setIsStateVisited] = useState(false);
 
+  // Force component to update when visitedStates change
+  const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
+  
   // Convert visitedStates array to a map for easy lookup
   // Use useMemo to properly cache and update the map only when visitedStates changes
   const visitedStatesMap = useMemo(() => {
     const stateMap = new Map();
     
-    // Log for debugging
-    console.log(`Creating map with: ${visitedStates.length} visited states`);
+    // Detailed logging for debugging
+    console.log(`MapSection: Creating map with ${visitedStates.length} visited states (update #${forceUpdateCounter})`);
     
-    // Populate with data
-    visitedStates.forEach((vs: VisitedState) => {
-      console.log(`Adding state ${vs.stateId}: visited=${vs.visited}`);
-      stateMap.set(vs.stateId, vs.visited);
-    });
+    // Dump all visited states for debugging
+    if (visitedStates.length > 0) {
+      visitedStates.forEach((vs: VisitedState, index) => {
+        console.log(`MapSection state #${index}: ${vs.stateId} = ${vs.visited ? 'VISITED' : 'not visited'}`);
+        stateMap.set(vs.stateId, vs.visited);
+      });
+    } else {
+      console.log("MapSection: No visited states found!");
+    }
     
     return stateMap;
+  }, [visitedStates, forceUpdateCounter]);
+  
+  // Force re-render when visitedStates changes
+  useEffect(() => {
+    console.log("MapSection: visitedStates changed, forcing update");
+    setForceUpdateCounter(prev => prev + 1);
   }, [visitedStates]);
 
   useEffect(() => {
