@@ -1,7 +1,7 @@
-# USA State Tracker - Version 1.1.0
+# USA State Tracker - Version 1.3.0
 
 ## Overview
-The USA State Tracker is an interactive web application that allows users to visually track which states they have visited across the United States. This project provides a rich, interactive experience with a map-based visualization, user profiles, and data persistence.
+The USA State Tracker is an interactive web application that allows users to visually track which states they have visited across the United States. This project provides a rich, interactive experience with a map-based visualization, user profiles, achievement badges, and data persistence.
 
 ## Features
 
@@ -9,7 +9,8 @@ The USA State Tracker is an interactive web application that allows users to vis
 - **Interactive Map:** Visual representation of all 50 US states with color-coded indicators for visited/unvisited states
 - **State List:** Scrollable, searchable list of all states with toggle functionality
 - **User Profiles:** User authentication with secure registration and login
-- **Data Persistence:** PostgreSQL database storing user data, visited states, and activity history
+- **Achievement Badges:** Gamified experience with badges for exploration milestones and achievements
+- **Data Persistence:** PostgreSQL database storing user data, visited states, activities, and earned badges
 - **Responsive Design:** Full support for mobile, tablet, and desktop devices
 
 ### Detailed Features
@@ -24,6 +25,7 @@ The USA State Tracker is an interactive web application that allows users to vis
   - Color-coded states (green for visited, gray for unvisited)
   - Hover effects for better user interaction
   - State selection with detailed information display
+  - Custom app logo and favicon for better branding
   - Clean, simplified interface for intuitive navigation
 
 - **Visited States Management**
@@ -31,6 +33,14 @@ The USA State Tracker is an interactive web application that allows users to vis
   - Optimistic UI updates for seamless user experience
   - Server-side validation and persistence
   - Activity logging for state status changes
+
+- **Achievement System**
+  - Interactive, dynamically-rendered badges with animations
+  - Multiple badge categories (Milestone, Regional, Special)
+  - Tiered badge system (Bronze, Silver, Gold, Platinum)
+  - Automatic badge evaluation based on exploration patterns
+  - Detailed badge information with earned dates
+  - Real-time badge unlocking notifications
 
 - **Statistics Dashboard**
   - Visual representation of visited states percentage
@@ -41,7 +51,8 @@ The USA State Tracker is an interactive web application that allows users to vis
 
 - **Database Integration**
   - PostgreSQL database using Drizzle ORM
-  - Schema with relations between users, states, visited states, and activities
+  - Schema with relations between users, states, visited states, activities, and badges
+  - JSON-based badge criteria for flexible achievement evaluation
   - Efficient caching and query management
   - Transaction support for data integrity
 
@@ -53,6 +64,8 @@ The USA State Tracker is an interactive web application that allows users to vis
 - **Tailwind CSS** with shadcn/ui components for styling
 - **React Hook Form** for form management and validation
 - **React Simple Maps** for interactive map visualization
+- **Framer Motion** for smooth animations and transitions
+- **React SVG** for dynamic SVG rendering and manipulation
 - **Zod** for data validation and type safety
 
 ### Backend
@@ -69,6 +82,8 @@ The USA State Tracker is an interactive web application that allows users to vis
 - **Visited States:** Junction table tracking which users have visited which states
 - **Activities:** Log of user actions for timeline and auditing
 - **SharedMaps:** Database storage for map image data with unique share codes for URLs
+- **Badges:** Achievement badges with name, description, tier, category, and criteria
+- **UserBadges:** Junction table tracking which users have earned which badges and when
 
 ## Implementation Details
 
@@ -104,9 +119,47 @@ The USA State Tracker is an interactive web application that allows users to vis
 - Indexing for query performance
 - BLOB storage for map image data with share code generation
 - User-to-shared-map relation for ownership tracking
+- JSON fields for flexible badge criteria storage
+
+### Achievement System
+- Tiered badges with visual differentiation (Bronze, Silver, Gold, Platinum)
+- Dynamic badge evaluation based on user's exploration patterns
+- JSON-based criteria evaluation for flexible achievement rules
+- Multiple achievement categories (Exploration, Regional, Special)
+- Real-time badge unlocking with animated visual feedback
+- Interactive badge grid with detailed tooltips and information
+- Automatic badge checking on state visitation changes
+- Progressive reveal of higher-tier badges as lower tiers are earned
 
 ## Release Notes
 
+### Version 1.3.0 (2025-04-18)
+- Enhanced visual identity with custom branding:
+  - Added custom USA map logo in the header 
+  - Implemented dynamic favicon generation using the map logo
+  - Added subtle animations to the logo for improved user engagement
+  - Improved overall visual consistency throughout the application
+- Upgraded badge system visualization:
+  - Replaced static badge images with dynamic SVG rendering
+  - Added smooth animations for newly earned badges
+  - Implemented tier-specific visual styling (bronze, silver, gold, platinum)
+  - Created interactive badge tooltips with enhanced information display
+  - Optimized badge rendering performance for mobile devices
+  - Added subtle hover animations for improved interactivity
+  
+### Version 1.2.0 (2025-04-18)
+- Implemented comprehensive achievement badge system:
+  - Added database schema for badges and user-badge relationships
+  - Created 12 unique achievement badges across multiple categories
+  - Implemented JSON-based flexible badge criteria evaluation
+  - Added automatic badge awarding based on state exploration patterns
+  - Created badge display UI with earned vs. unearned states
+  - Implemented badge details modal with criteria and earned date
+  - Added notifications for newly earned badges
+  - Designed badge seeding system for initial application setup
+  - Created regional badges for completing specific groups of states
+  - Implemented milestone badges for overall exploration progress
+  
 ### Version 1.1.0 (2025-04-18)
 - Improved map sharing functionality:
   - Replaced client-side clipboard-based sharing with server-side image storage
@@ -140,7 +193,8 @@ The USA State Tracker is an interactive web application that allows users to vis
 - Enhance sharing capabilities with social media integration
 - Add additional statistics and visualizations
 - Implement offline support with service workers
-- Add user achievements system
+- Add travel journal feature for recording memories at each location
+- Create badge progression paths and achievement series
 
 ## Technical Debt & Future Improvements
 - Consolidate conditional logic for state coloring
