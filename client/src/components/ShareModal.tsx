@@ -2,28 +2,21 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { Facebook, Twitter, Download, Share2, InfoIcon } from "lucide-react";
+import { Download, Share2, Copy, Link, CheckCircle2 } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
   mapImageUrl: string | null;
+  userId: string;
 }
 
-const ShareModal = ({ isOpen, onClose, mapImageUrl }: ShareModalProps) => {
-  const [isCopying, setIsCopying] = useState(false);
-  const [isSafari, setIsSafari] = useState(false);
-  
-  useEffect(() => {
-    // Detect Safari browser
-    const userAgent = navigator.userAgent.toLowerCase();
-    setIsSafari(
-      /safari/.test(userAgent) && 
-      !/chrome/.test(userAgent) && 
-      !/firefox/.test(userAgent) &&
-      !/edg/.test(userAgent)
-    );
-  }, []);
+const ShareModal = ({ isOpen, onClose, mapImageUrl, userId }: ShareModalProps) => {
+  const [isSharing, setIsSharing] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   const handleDownloadImage = () => {
     if (!mapImageUrl) {
@@ -35,122 +28,94 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl }: ShareModalProps) => {
       return;
     }
 
-    // Create a temporary link element to download the image
-    const link = document.createElement("a");
-    link.href = mapImageUrl;
-    link.download = "my-usa-states-map.png";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast({
-      title: "Success!",
-      description: "Your map image has been downloaded.",
-    });
-  };
-
-  const handleCopyToClipboard = async () => {
-    if (!mapImageUrl) {
-      toast({
-        title: "Error",
-        description: "No image available to copy",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Don't even try in Safari - just download
-    if (isSafari) {
-      toast({
-        title: "Safari detected",
-        description: "Safari doesn't support copying images to clipboard. Downloading instead.",
-        duration: 3000
-      });
-      handleDownloadImage();
-      return;
-    }
+    setIsDownloading(true);
 
     try {
-      setIsCopying(true);
+      // Create a temporary link element to download the image
+      const link = document.createElement("a");
+      link.href = mapImageUrl;
+      link.download = "my-usa-states-map.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-      // Alternative approach using a canvas element
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      
-      // Create a promise to handle image loading
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = mapImageUrl;
-      });
-
-      // Create canvas and draw image
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      
-      if (!ctx) {
-        throw new Error("Could not get canvas context");
-      }
-      
-      ctx.drawImage(img, 0, 0);
-      
-      // Try to copy from canvas
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-          try {
-            // Try the ClipboardItem API first
-            await navigator.clipboard.write([
-              new ClipboardItem({
-                [blob.type]: blob
-              })
-            ]);
-            
-            toast({
-              title: "Copied!",
-              description: "Image copied to clipboard. You can paste it anywhere!",
-            });
-          } catch (innerErr) {
-            console.error("ClipboardItem API failed:", innerErr);
-            
-            // Download fallback if copy fails
-            toast({
-              title: "Clipboard access denied",
-              description: "Using download instead. You can then share the downloaded image.",
-              duration: 5000
-            });
-            
-            // Trigger download automatically - reuse the download function
-            handleDownloadImage();
-          }
-        } else {
-          throw new Error("Could not create blob from canvas");
-        }
-        setIsCopying(false);
-      }, "image/png");
-      
-    } catch (err) {
-      console.error("Failed to copy image: ", err);
       toast({
-        title: "Failed to copy",
-        description: "Could not copy the image. Try downloading instead.",
+        title: "Success!",
+        description: "Your map image has been downloaded.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to download the image. Please try again.",
         variant: "destructive",
       });
-      setIsCopying(false);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
-  const handleShareFacebook = () => {
-    // Facebook requires a URL to share, not a direct image
-    // We'll fall back to sharing the current page URL
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank');
+  const handleGenerateShareUrl = async () => {
+    if (!mapImageUrl || !userId) {
+      toast({
+        title: "Error",
+        description: "Cannot generate share URL without image data",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSharing(true);
+
+    try {
+      // Save the image data to the server and get a share URL
+      const response = await apiRequest("/api/shared-maps", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+          imageData: mapImageUrl,
+        }),
+      });
+
+      setShareUrl(response.shareUrl);
+      toast({
+        title: "Share URL Generated!",
+        description: "You can now share this link with others.",
+      });
+    } catch (error) {
+      console.error("Error generating share URL:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate share URL. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSharing(false);
+    }
   };
 
-  const handleShareTwitter = () => {
-    // Twitter requires a URL to share, not a direct image
-    // We'll fall back to sharing the current page URL
-    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent('Check out my USA states tracking map!')}`, '_blank');
+  const copyToClipboard = async () => {
+    if (!shareUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopySuccess(true);
+      toast({
+        title: "Copied!",
+        description: "Link copied to clipboard.",
+      });
+
+      // Reset copy success after 2 seconds
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy the link. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -180,66 +145,89 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl }: ShareModalProps) => {
         )}
         
         <div className="space-y-3">
-          {/* Primary actions */}
-          <div className="flex space-x-3">
-            <Button
-              variant="default"
-              onClick={handleDownloadImage}
-              disabled={!mapImageUrl}
-              className="flex-1 flex items-center justify-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download Image
-            </Button>
-          </div>
-          
-          {/* Secondary actions */}
-          <div className="grid grid-cols-3 gap-2">
-            {!isSafari ? (
-              <Button
-                variant="outline"
-                onClick={handleCopyToClipboard}
-                disabled={!mapImageUrl || isCopying}
-                className="flex items-center justify-center"
-                size="sm"
-              >
-                <Share2 className="h-4 w-4 mr-1" />
-                {isCopying ? "..." : "Copy"}
-              </Button>
-            ) : (
-              <div className="flex flex-col items-center justify-center text-xs text-gray-500 bg-gray-50 rounded px-1 py-2">
-                <InfoIcon className="h-3 w-3 mb-1" />
-                Safari
+          {!shareUrl ? (
+            <>
+              {/* Primary actions - before sharing */}
+              <div className="grid gap-3">
+                <Button
+                  variant="default"
+                  onClick={handleGenerateShareUrl}
+                  disabled={!mapImageUrl || isSharing}
+                  className="flex items-center justify-center gap-2"
+                >
+                  {isSharing ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full"></div>
+                      Generating Share Link...
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="h-4 w-4" />
+                      Generate Share Link
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadImage}
+                  disabled={!mapImageUrl || isDownloading}
+                  className="flex items-center justify-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  {isDownloading ? "Downloading..." : "Download Image"}
+                </Button>
               </div>
-            )}
-            
-            <Button
-              variant="outline"
-              className="bg-[#1877F2] hover:bg-[#166fe5] text-white flex items-center justify-center"
-              onClick={handleShareFacebook}
-              disabled={!mapImageUrl}
-              size="sm"
-            >
-              <Facebook className="h-4 w-4" />
-            </Button>
-            
-            <Button
-              variant="outline"
-              className="bg-[#1DA1F2] hover:bg-[#1a94da] text-white flex items-center justify-center"
-              onClick={handleShareTwitter}
-              disabled={!mapImageUrl}
-              size="sm"
-            >
-              <Twitter className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          {mapImageUrl && (
-            <p className="text-xs text-center text-gray-500 mt-2">
-              {isSafari ? 
-                "Safari doesn't support copying images directly. Please use the download button." :
-                "Download the image to share it on other platforms"}
-            </p>
+              
+              <p className="text-xs text-center text-gray-500 mt-2">
+                Create a shareable link that others can view
+              </p>
+            </>
+          ) : (
+            <>
+              {/* After share URL is generated */}
+              <div className="bg-gray-50 border rounded-md flex p-2">
+                <div className="flex-1 overflow-hidden text-sm py-1 px-2 text-gray-500 whitespace-nowrap overflow-ellipsis">
+                  {shareUrl}
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={copyToClipboard}
+                  className="ml-1"
+                >
+                  {copySuccess ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="default"
+                  onClick={copyToClipboard}
+                  className="flex items-center justify-center gap-2"
+                >
+                  <Link className="h-4 w-4" />
+                  Copy Link
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadImage}
+                  className="flex items-center justify-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download
+                </Button>
+              </div>
+                
+              <p className="text-xs text-center text-gray-500 mt-2">
+                Anyone with this link can view your map
+              </p>
+            </>
           )}
         </div>
       </DialogContent>

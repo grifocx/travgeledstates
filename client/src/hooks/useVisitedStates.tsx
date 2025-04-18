@@ -407,5 +407,6 @@ export const useVisitedStates = () => {
     stats,
     isStateVisited, // New utility function
     localVisitedStatesMap: localVisitedStates, // For direct access if needed
+    userId, // Add userId for sharing functionality
   };
 };

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertVisitedStateSchema, insertActivitySchema } from "@shared/schema";
+import { insertVisitedStateSchema, insertActivitySchema, insertSharedMapSchema } from "@shared/schema";
 import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -128,6 +128,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to add activity", error: (error as Error).message });
     }
+  });
+
+  // Save a shared map
+  app.post("/api/shared-maps", async (req, res) => {
+    try {
+      const { userId, imageData } = req.body;
+      
+      if (!userId || !imageData) {
+        return res.status(400).json({ message: "userId and imageData are required" });
+      }
+      
+      const sharedMap = await storage.saveSharedMap(userId, imageData);
+      res.json({
+        shareCode: sharedMap.shareCode,
+        shareUrl: `${req.protocol}://${req.get('host')}/shared/${sharedMap.shareCode}`
+      });
+    } catch (error) {
+      console.error("Error saving shared map:", error);
+      res.status(500).json({ message: "Failed to save shared map", error: (error as Error).message });
+    }
+  });
+
+  // Get a shared map by code
+  app.get("/api/shared-maps/:shareCode", async (req, res) => {
+    try {
+      const { shareCode } = req.params;
+      const sharedMap = await storage.getSharedMapByCode(shareCode);
+      
+      if (!sharedMap) {
+        return res.status(404).json({ message: "Shared map not found" });
+      }
+      
+      res.json({
+        id: sharedMap.id,
+        userId: sharedMap.userId,
+        imageData: sharedMap.imageData,
+        shareCode: sharedMap.shareCode,
+        createdAt: sharedMap.createdAt
+      });
+    } catch (error) {
+      console.error("Error retrieving shared map:", error);
+      res.status(500).json({ message: "Failed to retrieve shared map", error: (error as Error).message });
+    }
+  });
+
+  // Route to view a shared map
+  app.get("/shared/:shareCode", (req, res) => {
+    // Redirect to the frontend with the share code as a query parameter
+    res.redirect(`/?share=${req.params.shareCode}`);
   });
 
   const httpServer = createServer(app);

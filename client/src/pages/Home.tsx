@@ -26,7 +26,8 @@ const Home = () => {
     loading, 
     stats,
     isStateVisited,
-    localVisitedStatesMap
+    localVisitedStatesMap,
+    userId
   } = useVisitedStates();
 
   // Debug logging
@@ -150,6 +151,7 @@ const Home = () => {
         isOpen={showShareModal} 
         onClose={() => setShowShareModal(false)}
         mapImageUrl={mapImageUrl}
+        userId={userId}
       />
     </div>
   );
