@@ -271,6 +271,16 @@ export const useVisitedStates = () => {
   
   // Function to toggle state visited status with immediate local update
   const toggleStateVisited = useCallback((stateId: string, visited: boolean) => {
+    if (!stateId) {
+      console.error("Error: attempted to toggle a state with undefined stateId");
+      toast({
+        title: "Error",
+        description: "Could not update state: missing state information",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     console.log(`Toggling state ${stateId} to ${visited ? 'visited' : 'unvisited'}`);
     
     // Immediately update local state for instant UI feedback
@@ -281,9 +291,19 @@ export const useVisitedStates = () => {
       return newMap;
     });
     
-    // Then call the mutation
-    toggleVisitedMutation.mutate({ stateId, visited });
-  }, [toggleVisitedMutation]);
+    // Ensure we have a valid stateId before mutating
+    const visitedAt = new Date().toISOString();
+    
+    // Then call the mutation with all required fields
+    toggleVisitedMutation.mutate({ 
+      stateId, 
+      userId, 
+      visited, 
+      visitedAt 
+    });
+    
+    console.log(`Mutation called with: stateId=${stateId}, userId=${userId}, visited=${visited}`);
+  }, [toggleVisitedMutation, userId]);
   
   // Function to reset all states
   const resetAllStates = () => {

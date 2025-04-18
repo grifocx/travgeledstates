@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Minus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 
 // Define TypeScript types for Geography data
 interface GeoFeature {
@@ -54,20 +55,27 @@ const MapSection = ({
   const firstRenderRef = useRef(true);
   const queryClient = useQueryClient();
   
-  // Initialize localVisitedStates from visitedStates prop only once on mount
+  // Initialize and update localVisitedStates from visitedStates props
   useEffect(() => {
-    if (firstRenderRef.current && visitedStates.length > 0) {
-      console.log("MapSection: Initializing local visited states from props");
-      const newMap = new Map<string, boolean>();
-      
-      visitedStates.forEach((vs: VisitedState) => {
+    console.log("MapSection: Updating local visited states from props");
+    const newMap = new Map<string, boolean>();
+    
+    // Populate the map with all visited states
+    visitedStates.forEach((vs: VisitedState) => {
+      if (vs.visited) {
         newMap.set(vs.stateId, vs.visited);
-        console.log(`MapSection: Initialized ${vs.stateId} = ${vs.visited ? 'VISITED' : 'NOT VISITED'}`);
-      });
-      
-      setLocalVisitedStates(newMap);
-      firstRenderRef.current = false;
+        console.log(`MapSection: State ${vs.stateId} is set to VISITED`);
+      }
+    });
+    
+    // Log all visited states
+    if (newMap.size > 0) {
+      console.log(`MapSection: Loaded ${newMap.size} visited states`);
+    } else {
+      console.log("MapSection: No visited states found in props");
     }
+    
+    setLocalVisitedStates(newMap);
   }, [visitedStates]);
   
   // Check if a state is visited - prefer isStateVisitedProp if available
@@ -87,22 +95,43 @@ const MapSection = ({
   
   // Handle state clicks with immediate visual feedback
   const handleStateToggle = useCallback((stateId: string) => {
+    if (!stateId) {
+      console.error("MapSection: Cannot toggle state with undefined stateId");
+      toast({
+        title: "Error",
+        description: "Cannot update state: missing state ID",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Toggle the current state
     const currentStatus = checkIfStateVisited(stateId);
     const newStatus = !currentStatus;
     
     console.log(`MapSection: User toggled ${stateId} from ${currentStatus ? 'VISITED' : 'NOT VISITED'} to ${newStatus ? 'VISITED' : 'NOT VISITED'}`);
     
-    // Update local state immediately
+    // Update local state immediately for UI feedback
     setLocalVisitedStates(prev => {
       const newMap = new Map(prev);
       newMap.set(stateId, newStatus);
       return newMap;
     });
     
+    // Set a render key to force the specific state to re-render
+    const renderKey = `${stateId}-${newStatus ? 'visited' : 'not-visited'}-${Date.now()}`;
+    console.log(`Setting unique render key: ${renderKey}`);
+    
     // Call the parent's toggle function
     toggleStateVisited(stateId, newStatus);
-  }, [checkIfStateVisited, toggleStateVisited]);
+    
+    // Show immediate feedback to the user
+    toast({
+      title: newStatus ? "State Marked as Visited" : "State Marked as Not Visited",
+      description: `${states.find(s => s.stateId === stateId)?.name || stateId} has been updated.`,
+      duration: 2000
+    });
+  }, [checkIfStateVisited, toggleStateVisited, states]);
 
   // Update selected state info when selection changes
   useEffect(() => {
