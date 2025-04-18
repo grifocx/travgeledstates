@@ -26,6 +26,23 @@ interface GeoFeature {
 // Import the US topojson map data from CDN
 const geoUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
+// Utility function to convert full state names to state codes
+const stateNameToCode: Record<string, string> = {
+  "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR", 
+  "California": "CA", "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE",
+  "Florida": "FL", "Georgia": "GA", "Hawaii": "HI", "Idaho": "ID", 
+  "Illinois": "IL", "Indiana": "IN", "Iowa": "IA", "Kansas": "KS",
+  "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME", "Maryland": "MD", 
+  "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN", "Mississippi": "MS",
+  "Missouri": "MO", "Montana": "MT", "Nebraska": "NE", "Nevada": "NV",
+  "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM", "New York": "NY",
+  "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH", "Oklahoma": "OK",
+  "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI", "South Carolina": "SC",
+  "South Dakota": "SD", "Tennessee": "TN", "Texas": "TX", "Utah": "UT",
+  "Vermont": "VT", "Virginia": "VA", "Washington": "WA", "West Virginia": "WV",
+  "Wisconsin": "WI", "Wyoming": "WY"
+};
+
 interface MapSectionProps {
   states: State[];
   visitedStates: VisitedState[];
@@ -209,13 +226,33 @@ const MapSection = ({
             <Geographies geography={geoUrl}>
               {({ geographies }: { geographies: GeoFeature[] }) =>
                 geographies.map((geo: GeoFeature) => {
-                  const stateId = geo.properties.iso_3166_2;
+                  // Extract the state ID from the properties - this is crucial
+                  let stateId = geo.properties.iso_3166_2;
+                  
+                  // Debug the geography properties if stateId is undefined
+                  if (!stateId) {
+                    // Try alternative property names first
+                    stateId = geo.properties.postal || geo.properties.abbr || geo.properties.STUSPS;
+                    
+                    // If still undefined, try to map from state name to state code
+                    if (!stateId && geo.properties.name) {
+                      const stateName = geo.properties.name;
+                      stateId = stateNameToCode[stateName];
+                      
+                      console.log(`Mapping from name "${stateName}" to state code: ${stateId || 'NOT FOUND'}`);
+                    }
+                    
+                    // If we still don't have a valid stateId, log the issue
+                    if (!stateId) {
+                      console.log("Found geography without state ID:", geo.properties);
+                    }
+                  }
                   
                   // Use our consistent function to check state visited status
-                  const stateVisited = checkIfStateVisited(stateId);
+                  const stateVisited = stateId ? checkIfStateVisited(stateId) : false;
                   
                   const isSelected = selectedState === stateId;
-                  const stateName = states.find(s => s.stateId === stateId)?.name || geo.properties.name;
+                  const stateName = stateId ? (states.find(s => s.stateId === stateId)?.name || geo.properties.name) : geo.properties.name;
                   
                   // Debug logging for specific states
                   if (stateId === "CA" || stateId === "NY" || stateId === "TX" || stateId === "FL" || stateId === selectedState) {
