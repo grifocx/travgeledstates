@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, uniqueIndex, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -52,6 +52,27 @@ export const sharedMaps = pgTable("shared_maps", {
   imageData: text("image_data").notNull(), // Base64 encoded image data
   shareCode: text("share_code").notNull().unique(), // Unique code for sharing
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Badges schema
+export const badges = pgTable("badges", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description").notNull(),
+  imageUrl: text("image_url").notNull(), // SVG icon or image path
+  criteria: json("criteria").notNull(), // JSON with criteria like {type: "states_count", value: 10}
+  tier: integer("tier").notNull().default(1), // 1=bronze, 2=silver, 3=gold, etc.
+  category: text("category").notNull(), // E.g., "exploration", "regional", "special"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// User badges junction table
+export const userBadges = pgTable("user_badges", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  badgeId: integer("badge_id").notNull(),
+  earnedAt: timestamp("earned_at").defaultNow().notNull(),
+  metadata: json("metadata"), // Optional JSON with additional data about how badge was earned
 });
 
 // Insert schemas
