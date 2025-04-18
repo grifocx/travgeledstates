@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { Download, Share2, Copy, Link, CheckCircle2 } from "lucide-react";
+import { Download, Share2, Copy, Link, CheckCircle2, ExternalLink } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface ShareModalProps {
@@ -17,6 +17,13 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl, userId }: ShareModalProps) =
   const [isDownloading, setIsDownloading] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isSharedView, setIsSharedView] = useState(false);
+  
+  // Check if we're viewing a shared map (from URL param)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setIsSharedView(!!params.get('share'));
+  }, []);
 
   const handleDownloadImage = () => {
     if (!mapImageUrl) {
@@ -68,7 +75,7 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl, userId }: ShareModalProps) =
 
     try {
       // Save the image data to the server and get a share URL
-      const response = await apiRequest("/api/shared-maps", {
+      const response = await fetch("/api/shared-maps", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -78,8 +85,18 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl, userId }: ShareModalProps) =
           imageData: mapImageUrl,
         }),
       });
-
-      setShareUrl(response.shareUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Get the application's base URL for constructing the share URL
+      const baseUrl = window.location.origin;
+      const shareUrl = `${baseUrl}/shared/${data.shareCode}`;
+      
+      setShareUrl(shareUrl);
       toast({
         title: "Share URL Generated!",
         description: "You can now share this link with others.",
@@ -221,6 +238,15 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl, userId }: ShareModalProps) =
                 >
                   <Download className="h-4 w-4" />
                   Download
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  onClick={() => shareUrl && window.open(shareUrl, '_blank')}
+                  className="flex items-center justify-center gap-2 col-span-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Open in New Tab
                 </Button>
               </div>
                 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import MapSection from "@/components/MapSection";
 import StateDashboard from "@/components/StateDashboard";
@@ -15,6 +16,8 @@ const Home = () => {
   const [mapImageUrl, setMapImageUrl] = useState<string | null>(null);
   const [isCapturingMap, setIsCapturingMap] = useState(false);
   const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [sharedMapLoading, setSharedMapLoading] = useState(false);
+  const [location] = useLocation();
   const mapSectionRef = useRef<HTMLDivElement>(null);
   
   const { 
@@ -38,6 +41,47 @@ const Home = () => {
       console.log("Sample visited state:", visitedStates[0]);
     }
   }, [visitedStates]);
+  
+  // Handle shared map loading
+  useEffect(() => {
+    // Check for share query parameter
+    const params = new URLSearchParams(window.location.search);
+    const shareCode = params.get('share');
+    
+    if (shareCode) {
+      setSharedMapLoading(true);
+      
+      // Fetch the shared map data from the API
+      fetch(`/api/shared-maps/${shareCode}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to load shared map: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Set the map image from the retrieved data
+          setMapImageUrl(data.imageData);
+          setShowShareModal(true);
+          
+          toast({
+            title: "Shared Map Loaded",
+            description: "You're viewing a shared map.",
+          });
+        })
+        .catch(error => {
+          console.error("Error loading shared map:", error);
+          toast({
+            title: "Error",
+            description: "Could not load the shared map. It may have expired or been removed.",
+            variant: "destructive"
+          });
+        })
+        .finally(() => {
+          setSharedMapLoading(false);
+        });
+    }
+  }, [location]);
 
   // Capture map image when the modal is opened
   const captureMapAsImage = useCallback(async () => {
