@@ -338,7 +338,10 @@ export class DatabaseStorage implements IStorage {
         
         console.log(`Checking badge: ${badge.name}, criteria type: ${criteria.type}`);
         
-        if (criteria.type === 'stateCount') {
+        // Normalize criteria type to handle different formats (camelCase vs snake_case)
+        const criteriaType = criteria.type.replace(/_/g, '').toLowerCase();
+        
+        if (criteriaType === 'statecount' || criteriaType === 'statescount') {
           // State count badge - check if user has visited enough states
           console.log(`State count badge: ${badge.name}, required: ${criteria.count}, user has: ${visitedStatesCount}`);
           if (visitedStatesCount >= criteria.count) {
@@ -350,7 +353,7 @@ export class DatabaseStorage implements IStorage {
             newlyEarnedBadges.push(badge);
           }
         }
-        else if (criteria.type === 'regionComplete') {
+        else if (criteriaType === 'regioncomplete' || criteriaType === 'regioncomplete') {
           // Region complete badge - check if all states in region visited
           const regionStates = criteria.states;
           const visitedRegionStates = visitedStateIds.filter(id => regionStates.includes(id));
@@ -367,7 +370,7 @@ export class DatabaseStorage implements IStorage {
             newlyEarnedBadges.push(badge);
           }
         }
-        else if (criteria.type === 'specificStates') {
+        else if (criteriaType === 'specificstates' || criteriaType === 'specificstates') {
           let badgeEarned = false;
           
           // Specific states badge - check specific combinations
