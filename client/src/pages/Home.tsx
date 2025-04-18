@@ -23,6 +23,15 @@ const Home = () => {
     stats 
   } = useVisitedStates();
 
+  // Debug logging
+  useEffect(() => {
+    console.log("Home component received visitedStates:", visitedStates);
+    
+    if (visitedStates.length > 0) {
+      console.log("Sample visited state:", visitedStates[0]);
+    }
+  }, [visitedStates]);
+
   // Generate a share URL when the modal is opened
   useEffect(() => {
     if (showShareModal) {

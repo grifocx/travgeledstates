@@ -10,21 +10,26 @@ import { useAuth } from "./use-auth";
 export const useVisitedStates = () => {
   // Get user from auth context
   const { user } = useAuth();
-  // Use the actual user ID if authenticated, otherwise use localStorage for anonymous tracking
-  const getUserId = () => {
-    if (user?.id) {
-      return `user_${user.id}`;
-    }
-    
-    let userId = localStorage.getItem("user_id");
-    if (!userId) {
-      userId = `user_${Math.random().toString(36).substring(2, 9)}`;
-      localStorage.setItem("user_id", userId);
-    }
-    return userId;
-  };
+  const [userId, setUserId] = useState<string>("");
   
-  const userId = getUserId();
+  // Update userId whenever auth state changes
+  useEffect(() => {
+    if (user?.id) {
+      setUserId(`user_${user.id}`);
+      // Also save to localStorage for persistence
+      localStorage.setItem("user_id", `user_${user.id}`);
+      console.log(`Using authenticated user ID: user_${user.id}`);
+    } else {
+      // Use anonymous ID from localStorage if not authenticated
+      let anonymousId = localStorage.getItem("user_id");
+      if (!anonymousId) {
+        anonymousId = `user_${Math.random().toString(36).substring(2, 9)}`;
+        localStorage.setItem("user_id", anonymousId);
+      }
+      setUserId(anonymousId);
+      console.log(`Using anonymous user ID: ${anonymousId}`);
+    }
+  }, [user]);
   const queryClient = useQueryClient();
   
   // Define Zod schemas for type safety
@@ -62,7 +67,7 @@ export const useVisitedStates = () => {
     staleTime: Infinity, // States don't change
   });
   
-  // Fetch visited states with type safety
+  // Fetch visited states with type safety - only if we have a userId
   const { 
     data: visitedStates = [],
     isLoading: visitedStatesLoading,
@@ -70,9 +75,10 @@ export const useVisitedStates = () => {
   } = useQuery<VisitedState[], Error, VisitedState[]>({
     queryKey: [`/api/visited-states/${userId}`],
     refetchOnWindowFocus: true,
+    enabled: !!userId, // Only run query if userId is available
   });
   
-  // Fetch activities with type safety
+  // Fetch activities with type safety - only if we have a userId
   const { 
     data: activities = [],
     isLoading: activitiesLoading,
@@ -80,6 +86,7 @@ export const useVisitedStates = () => {
   } = useQuery<Activity[], Error, Activity[]>({
     queryKey: [`/api/activities/${userId}`],
     refetchOnWindowFocus: true,
+    enabled: !!userId, // Only run query if userId is available
   });
   
   // Toggle visited state mutation

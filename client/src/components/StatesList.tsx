@@ -1,5 +1,6 @@
 import { State, VisitedState } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMemo } from "react";
 
 interface StatesListProps {
   states: State[];
@@ -9,10 +10,18 @@ interface StatesListProps {
 }
 
 const StatesList = ({ states, visitedStates, toggleStateVisited, loading }: StatesListProps) => {
-  // Convert visitedStates array to a map for easy lookup
-  const visitedStatesMap = new Map(
-    visitedStates.map(vs => [vs.stateId, vs.visited])
-  );
+  // Convert visitedStates array to a map for easy lookup using useMemo
+  const visitedStatesMap = useMemo(() => {
+    console.log("StatesList: Building map with", visitedStates.length, "visited states");
+    
+    if (visitedStates.length > 0) {
+      console.log("StatesList sample:", visitedStates[0]);
+    }
+    
+    return new Map(
+      visitedStates.map(vs => [vs.stateId, vs.visited])
+    );
+  }, [visitedStates]);
 
   if (loading) {
     return (
