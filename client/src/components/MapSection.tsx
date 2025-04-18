@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import React from "react";
 import { 
   ComposableMap,
   Geographies,
@@ -48,25 +47,21 @@ const MapSection = ({
   const [isStateVisited, setIsStateVisited] = useState(false);
 
   // Convert visitedStates array to a map for easy lookup
-  const visitedStatesMap = new Map();
-  
-  // Process the visitedStates array using useMemo to prevent unnecessary recalculations
-  React.useMemo(() => {
-    // Clear the map first
-    visitedStatesMap.clear();
+  // Use useMemo to properly cache and update the map only when visitedStates changes
+  const visitedStatesMap = useMemo(() => {
+    const stateMap = new Map();
     
-    // Populate with new data
+    // Log for debugging
+    console.log(`Creating map with: ${visitedStates.length} visited states`);
+    
+    // Populate with data
     visitedStates.forEach((vs: VisitedState) => {
-      visitedStatesMap.set(vs.stateId, vs.visited);
+      console.log(`Adding state ${vs.stateId}: visited=${vs.visited}`);
+      stateMap.set(vs.stateId, vs.visited);
     });
     
-    // For debugging
-    console.log(`Total states: ${states.length}, Visited states: ${visitedStates.length}`);
-    
-    if (visitedStates.length > 0) {
-      console.log("First few visited states:", visitedStates.slice(0, 3));
-    }
-  }, [visitedStates, states.length]);
+    return stateMap;
+  }, [visitedStates]);
 
   useEffect(() => {
     if (selectedState) {
