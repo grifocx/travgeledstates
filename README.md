@@ -130,9 +130,17 @@ npm run dev
   - JSON fields for flexible achievement criteria storage
   - Efficient relation modeling for badges and user achievements
 
-## Latest Release - v1.3.0
+## Latest Release - v1.3.2
 
-### Major Updates
+### Latest Updates
+- Code quality improvements and technical debt reduction:
+  - Added proper TypeScript interfaces for badge criteria evaluation
+  - Enhanced error handling with improved user feedback
+  - Fixed potential type safety issues in API responses
+  - Improved database access with better error handling
+  - General code cleanup and minor bug fixes
+
+### Prior Release - v1.3.0
 - Enhanced visual branding with custom USA map logo:
   - Added dynamic SVG-based logo in the application header
   - Implemented automatic favicon generation using the logo design
