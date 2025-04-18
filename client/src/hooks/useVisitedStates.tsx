@@ -124,7 +124,7 @@ export const useVisitedStates = () => {
       stateId: string; 
       userId?: string;
       visited: boolean; 
-      visitedAt?: string;
+      visitedAt: string;  // Changed from optional to required to match API schema
     }) => {
       // Ensure we have required parameters
       if (!stateId) {
@@ -185,7 +185,8 @@ export const useVisitedStates = () => {
         const response = await apiRequest("POST", "/api/visited-states/toggle", {
           stateId,
           userId: effectiveUserId,
-          visited
+          visited,
+          visitedAt: effectiveVisitedAt // This is the missing field
         });
         
         if (!response.ok) {
@@ -313,11 +314,12 @@ export const useVisitedStates = () => {
     // Ensure we have a valid stateId before mutating
     const visitedAt = new Date().toISOString();
     
-    // Then call the mutation with required fields only
+    // Then call the mutation with ALL required fields
     toggleVisitedMutation.mutate({ 
       stateId, 
       userId, 
-      visited
+      visited,
+      visitedAt  // Include visitedAt as required by the API
     });
     
     console.log(`Mutation called with: stateId=${stateId}, userId=${userId}, visited=${visited}`);
