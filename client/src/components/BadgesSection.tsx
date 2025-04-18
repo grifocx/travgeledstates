@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Badge, UserBadge } from "@shared/schema";
-import { BadgeGrid } from "./BadgeGrid";
+import { DynamicBadgeGrid } from "./badges/DynamicBadgeGrid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Award, Trophy, Medal } from "lucide-react";
 import { Badge as BadgeUI } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { getQueryFn, queryClient, apiRequest } from "@/lib/queryClient";
+import { useState } from "react";
 
 const badgeCategories = [
   { id: "all", label: "All Badges" },
@@ -28,6 +29,7 @@ interface BadgeResponse {
 
 export function BadgesSection({ userId }: BadgesSectionProps) {
   const { toast } = useToast();
+  const [newBadgesEarned, setNewBadgesEarned] = useState(false);
   
   // Fetch all badges
   const badgesQuery = useQuery({
@@ -66,6 +68,9 @@ export function BadgesSection({ userId }: BadgesSectionProps) {
       return await response.json();
     },
     onSuccess: (data) => {
+      // Set animation flag if new badges were earned
+      setNewBadgesEarned(data.newBadgesEarned);
+      
       if (data.newBadgesEarned) {
         // Show a toast for each new badge
         data.badges.forEach((badge: Badge) => {
@@ -203,10 +208,12 @@ export function BadgesSection({ userId }: BadgesSectionProps) {
         {badgeCategories.map(category => (
           <TabsContent key={category.id} value={category.id} className="m-0">
             <CardContent>
-              <BadgeGrid 
+              <DynamicBadgeGrid 
                 badges={getBadgesByCategory(category.id)}
                 earnedBadges={userBadgesQuery.data || []}
                 emptyMessage={`No ${category.label.toLowerCase()} badges available`}
+                showAll={true}
+                animateNewBadges={newBadgesEarned}
               />
             </CardContent>
           </TabsContent>
