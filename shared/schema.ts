@@ -1,6 +1,22 @@
-import { pgTable, text, serial, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// User schema
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(), // Will store hashed password
+  email: text("email").notNull().unique(),
+  fullName: text("full_name"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+}, (table) => {
+  return {
+    usernameIdx: uniqueIndex("username_idx").on(table.username),
+    emailIdx: uniqueIndex("email_idx").on(table.email)
+  };
+});
 
 // State data schema
 export const states = pgTable("states", {
@@ -13,12 +29,39 @@ export const states = pgTable("states", {
 export const visitedStates = pgTable("visited_states", {
   id: serial("id").primaryKey(),
   stateId: text("state_id").notNull(),
-  userId: text("user_id").notNull(), // For now, this will be a session identifier
+  userId: text("user_id").notNull(), // References user.id
   visited: boolean("visited").notNull().default(true),
-  visitedAt: text("visited_at").notNull(), // ISO date string
+  visitedAt: text("visited_at").notNull(), // Keeping as text to avoid migration issues
+  notes: text("notes") // Optional notes about the visit
+});
+
+// User activity schema for tracking recent actions
+export const activities = pgTable("activities", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  stateId: text("state_id").notNull(),
+  stateName: text("state_name").notNull(),
+  action: text("action").notNull(), // "visited" or "unvisited"
+  timestamp: text("timestamp").notNull() // Keeping as text to avoid migration issues
 });
 
 // Insert schemas
+export const insertUserSchema = createInsertSchema(users)
+  .pick({
+    username: true,
+    password: true,
+    email: true,
+    fullName: true
+  })
+  .extend({
+    confirmPassword: z.string()
+  });
+
+export const loginUserSchema = z.object({
+  username: z.string().min(3).max(50),
+  password: z.string().min(6)
+});
+
 export const insertStateSchema = createInsertSchema(states).pick({
   stateId: true,
   name: true,
@@ -29,23 +72,7 @@ export const insertVisitedStateSchema = createInsertSchema(visitedStates).pick({
   userId: true,
   visited: true,
   visitedAt: true,
-});
-
-// Export types
-export type State = typeof states.$inferSelect;
-export type InsertState = z.infer<typeof insertStateSchema>;
-
-export type VisitedState = typeof visitedStates.$inferSelect;
-export type InsertVisitedState = z.infer<typeof insertVisitedStateSchema>;
-
-// User activity schema for tracking recent actions
-export const activities = pgTable("activities", {
-  id: serial("id").primaryKey(),
-  userId: text("user_id").notNull(),
-  stateId: text("state_id").notNull(),
-  stateName: text("state_name").notNull(),
-  action: text("action").notNull(), // "visited" or "unvisited"
-  timestamp: text("timestamp").notNull(), // ISO date string
+  notes: true
 });
 
 export const insertActivitySchema = createInsertSchema(activities).pick({
@@ -53,8 +80,19 @@ export const insertActivitySchema = createInsertSchema(activities).pick({
   stateId: true,
   stateName: true,
   action: true,
-  timestamp: true,
+  timestamp: true
 });
+
+// Export types
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type LoginUser = z.infer<typeof loginUserSchema>;
+
+export type State = typeof states.$inferSelect;
+export type InsertState = z.infer<typeof insertStateSchema>;
+
+export type VisitedState = typeof visitedStates.$inferSelect;
+export type InsertVisitedState = z.infer<typeof insertVisitedStateSchema>;
 
 export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
