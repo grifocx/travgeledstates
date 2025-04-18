@@ -116,6 +116,7 @@ const Home = () => {
               toggleStateVisited={toggleStateVisited}
               loading={loading}
               isStateVisited={isStateVisited}
+              stats={stats}
             />
           </div>
           

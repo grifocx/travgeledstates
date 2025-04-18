@@ -51,6 +51,7 @@ interface MapSectionProps {
   toggleStateVisited: (stateId: string, visited: boolean) => void;
   loading: boolean;
   isStateVisited?: (stateId: string) => boolean; // Optional utility function
+  stats?: { visited: number; total: number; percentage: number }; // Optional stats for watermark
 }
 
 const MapSection = ({ 
@@ -60,7 +61,8 @@ const MapSection = ({
   selectedState, 
   toggleStateVisited,
   loading,
-  isStateVisited: isStateVisitedProp // Rename to avoid conflict with state
+  isStateVisited: isStateVisitedProp, // Rename to avoid conflict with state
+  stats
 }: MapSectionProps) => {
   const [position, setPosition] = useState({ zoom: 1, coordinates: [0, 0] });
   const [mobileInfoVisible, setMobileInfoVisible] = useState(false);
@@ -216,6 +218,14 @@ const MapSection = ({
           {/* Watermark - Only visible in screenshots */}
           <div className="absolute bottom-3 right-3 z-10 bg-white bg-opacity-80 px-3 py-1.5 rounded text-sm text-gray-700 shadow-sm" id="map-watermark">
             <div className="font-medium">USA States Tracker</div>
+            {stats && (
+              <div className="text-xs mt-1 text-gray-600">
+                {stats.visited} of {stats.total} states visited ({stats.percentage}%)
+              </div>
+            )}
+            <div className="text-xs text-gray-500 mt-1">
+              {new Date().toLocaleDateString()}
+            </div>
           </div>
 
           <ComposableMap
