@@ -45,6 +45,15 @@ export const activities = pgTable("activities", {
   timestamp: text("timestamp").notNull() // Keeping as text to avoid migration issues
 });
 
+// Shared maps schema for storing and sharing map images
+export const sharedMaps = pgTable("shared_maps", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  imageData: text("image_data").notNull(), // Base64 encoded image data
+  shareCode: text("share_code").notNull().unique(), // Unique code for sharing
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users)
   .pick({
@@ -83,6 +92,12 @@ export const insertActivitySchema = createInsertSchema(activities).pick({
   timestamp: true
 });
 
+export const insertSharedMapSchema = createInsertSchema(sharedMaps).pick({
+  userId: true,
+  imageData: true,
+  shareCode: true
+});
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -96,3 +111,6 @@ export type InsertVisitedState = z.infer<typeof insertVisitedStateSchema>;
 
 export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
+
+export type SharedMap = typeof sharedMaps.$inferSelect;
+export type InsertSharedMap = z.infer<typeof insertSharedMapSchema>;

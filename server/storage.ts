@@ -2,7 +2,8 @@ import {
   State, InsertState, 
   VisitedState, InsertVisitedState,
   Activity, InsertActivity,
-  states, visitedStates, activities
+  SharedMap, InsertSharedMap,
+  states, visitedStates, activities, sharedMaps
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
@@ -20,6 +21,10 @@ export interface IStorage {
   // Activity methods
   getActivities(userId: string, limit?: number): Promise<Activity[]>;
   addActivity(activity: InsertActivity): Promise<Activity>;
+  
+  // Shared maps methods
+  saveSharedMap(userId: string, imageData: string): Promise<SharedMap>;
+  getSharedMapByCode(shareCode: string): Promise<SharedMap | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -149,6 +154,52 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return newActivity;
+  }
+
+  // Save a shared map and generate a unique share code
+  async saveSharedMap(userId: string, imageData: string): Promise<SharedMap> {
+    // Normalize userId to handle various formats (same logic as in other methods)
+    let normalizedUserId = userId;
+    if (!normalizedUserId.startsWith('user_') && !isNaN(Number(normalizedUserId))) {
+      normalizedUserId = `user_${normalizedUserId}`;
+    }
+    
+    // Generate a random share code
+    const shareCode = this.generateShareCode();
+    
+    // Save to database
+    const [sharedMap] = await db.insert(sharedMaps)
+      .values({
+        userId: normalizedUserId,
+        imageData,
+        shareCode
+      })
+      .returning();
+    
+    return sharedMap;
+  }
+
+  // Get a shared map by its share code
+  async getSharedMapByCode(shareCode: string): Promise<SharedMap | undefined> {
+    const results = await db.select()
+      .from(sharedMaps)
+      .where(eq(sharedMaps.shareCode, shareCode));
+    
+    return results.length > 0 ? results[0] : undefined;
+  }
+  
+  // Helper method to generate a unique share code
+  private generateShareCode(): string {
+    // Generate a random string of characters
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const codeLength = 8;
+    let result = '';
+    
+    for (let i = 0; i < codeLength; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    
+    return result;
   }
 }
 
