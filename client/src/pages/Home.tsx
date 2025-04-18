@@ -71,6 +71,7 @@ const Home = () => {
             selectedState={selectedState}
             toggleStateVisited={toggleStateVisited}
             loading={loading}
+            isStateVisited={isStateVisited}
           />
           
           <StateDashboard 
@@ -87,6 +88,7 @@ const Home = () => {
           visitedStates={visitedStates}
           toggleStateVisited={toggleStateVisited}
           loading={loading}
+          isStateVisited={isStateVisited}
         />
       </main>
       

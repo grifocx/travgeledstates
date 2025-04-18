@@ -269,11 +269,21 @@ export const useVisitedStates = () => {
     }
   }, [statesError, visitedStatesError, activitiesError]);
   
-  // Function to toggle state visited status
-  const toggleStateVisited = (stateId: string, visited: boolean) => {
+  // Function to toggle state visited status with immediate local update
+  const toggleStateVisited = useCallback((stateId: string, visited: boolean) => {
     console.log(`Toggling state ${stateId} to ${visited ? 'visited' : 'unvisited'}`);
+    
+    // Immediately update local state for instant UI feedback
+    setLocalVisitedStates(prev => {
+      const newMap = new Map(prev);
+      newMap.set(stateId, visited);
+      console.log(`Immediately updated local state: ${stateId} = ${visited}`);
+      return newMap;
+    });
+    
+    // Then call the mutation
     toggleVisitedMutation.mutate({ stateId, visited });
-  };
+  }, [toggleVisitedMutation]);
   
   // Function to reset all states
   const resetAllStates = () => {
@@ -325,10 +335,26 @@ export const useVisitedStates = () => {
   const isStateVisited = useCallback((stateId: string): boolean => {
     // First check local state (most up-to-date)
     if (localVisitedStates.has(stateId)) {
-      return localVisitedStates.get(stateId) ?? false;
+      const isVisited = localVisitedStates.get(stateId) ?? false;
+      console.log(`isStateVisited (from local state): ${stateId} = ${isVisited}`);
+      return isVisited;
     }
+    
     // Fall back to API data
-    return visitedStates.some(vs => vs.stateId === stateId && vs.visited);
+    const vsFromAPI = visitedStates.find(vs => vs.stateId === stateId);
+    const isVisited = vsFromAPI?.visited ?? false;
+    
+    // Cache this result in local state for future lookups
+    if (vsFromAPI && !localVisitedStates.has(stateId)) {
+      setLocalVisitedStates(prev => {
+        const newMap = new Map(prev);
+        newMap.set(stateId, isVisited);
+        return newMap;
+      });
+    }
+    
+    console.log(`isStateVisited (from API): ${stateId} = ${isVisited}`);
+    return isVisited;
   }, [localVisitedStates, visitedStates]);
   
   return {

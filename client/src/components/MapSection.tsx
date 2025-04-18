@@ -83,12 +83,23 @@ const MapSection = ({
     if (selectedState) {
       const state = states.find(s => s.stateId === selectedState);
       setSelectedStateName(state ? state.name : "");
-      setIsStateVisited(visitedStatesMap.get(selectedState) === true);
+      
+      // Check if state is visited using the isStateVisitedProp function if available
+      let stateVisited = false;
+      if (isStateVisitedProp) {
+        stateVisited = isStateVisitedProp(selectedState);
+        console.log(`Using isStateVisitedProp function: ${selectedState} is ${stateVisited ? 'visited' : 'not visited'}`);
+      } else {
+        stateVisited = visitedStatesMap.get(selectedState) === true;
+        console.log(`Using visitedStatesMap: ${selectedState} is ${stateVisited ? 'visited' : 'not visited'}`);
+      }
+      
+      setIsStateVisited(stateVisited);
       setMobileInfoVisible(true);
     } else {
       setMobileInfoVisible(false);
     }
-  }, [selectedState, states, visitedStatesMap]);
+  }, [selectedState, states, visitedStatesMap, isStateVisitedProp]);
 
   const handleZoomIn = () => {
     if (position.zoom >= 4) return;
@@ -150,25 +161,31 @@ const MapSection = ({
               {({ geographies }: { geographies: GeoFeature[] }) =>
                 geographies.map((geo: GeoFeature) => {
                   const stateId = geo.properties.iso_3166_2;
-                  // For each geography, check if it's in our visited states map
-                  // Force toString to ensure type consistency when comparing
-                  const isVisitedRaw = visitedStatesMap.get(stateId);
-                  const isVisited = isVisitedRaw === true;
+                  
+                  // First check using our direct isStateVisited function if available
+                  let stateVisited = false;
+                  if (isStateVisitedProp) {
+                    stateVisited = isStateVisitedProp(stateId);
+                  } else {
+                    // Fall back to the visitedStatesMap
+                    stateVisited = visitedStatesMap.get(stateId) === true;
+                  }
+                  
                   const isSelected = selectedState === stateId;
                   const stateName = states.find(s => s.stateId === stateId)?.name || geo.properties.name;
                   
                   // Debug logging for specific states
-                  if (stateId === "CA" || stateId === "NY" || stateId === "TX" || stateId === selectedState) {
-                    console.log(`Rendering state ${stateId} (${stateName}): visited=${isVisited}, selected=${isSelected}`);
+                  if (stateId === "CA" || stateId === "NY" || stateId === "TX" || stateId === "FL" || stateId === selectedState) {
+                    console.log(`Rendering state ${stateId} (${stateName}): visited=${stateVisited}, selected=${isSelected}, visitedInMap=${visitedStatesMap.get(stateId)}`);
                   }
                   
                   // Set fill color based on state
-                  const fillColor = isVisited ? "#10B981" : "#D1D5DB";
-                  const hoverColor = isVisited ? "#059669" : "#9CA3AF";
+                  const fillColor = stateVisited ? "#10B981" : "#D1D5DB";
+                  const hoverColor = stateVisited ? "#059669" : "#9CA3AF";
                   
                   return (
                     <Geography
-                      key={`${geo.rsmKey}-${isVisited ? 'visited' : 'not'}-${forceUpdateCounter}`}
+                      key={`${geo.rsmKey}-${stateVisited ? 'visited' : 'not'}-${forceUpdateCounter}`}
                       geography={geo}
                       onClick={() => handleStateClick(stateId, stateName)}
                       style={{
@@ -192,7 +209,7 @@ const MapSection = ({
                           outline: "none",
                         }
                       }}
-                      className={`state ${isVisited ? 'visited' : ''} ${isSelected ? 'selected' : ''}`}
+                      className={`state ${stateVisited ? 'visited' : ''} ${isSelected ? 'selected' : ''}`}
                     />
                   );
                 })

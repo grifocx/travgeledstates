@@ -7,9 +7,16 @@ interface StatesListProps {
   visitedStates: VisitedState[];
   toggleStateVisited: (stateId: string, visited: boolean) => void;
   loading: boolean;
+  isStateVisited?: (stateId: string) => boolean; // Optional utility function
 }
 
-const StatesList = ({ states, visitedStates, toggleStateVisited, loading }: StatesListProps) => {
+const StatesList = ({ 
+  states, 
+  visitedStates, 
+  toggleStateVisited, 
+  loading,
+  isStateVisited: isStateVisitedProp 
+}: StatesListProps) => {
   // Convert visitedStates array to a map for easy lookup using useMemo
   const visitedStatesMap = useMemo(() => {
     console.log("StatesList: Building map with", visitedStates.length, "visited states");
@@ -41,8 +48,15 @@ const StatesList = ({ states, visitedStates, toggleStateVisited, loading }: Stat
       <h2 className="text-xl font-semibold mb-4">States List</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {states.map((state) => {
-          const isVisited = visitedStatesMap.get(state.stateId) === true;
-          const statusClass = isVisited 
+          // Use isStateVisitedProp if available, otherwise fall back to the map
+          let stateIsVisited;
+          if (isStateVisitedProp) {
+            stateIsVisited = isStateVisitedProp(state.stateId);
+          } else {
+            stateIsVisited = visitedStatesMap.get(state.stateId) === true;
+          }
+          
+          const statusClass = stateIsVisited 
             ? 'bg-emerald-500 text-white' 
             : 'bg-gray-100 text-gray-700';
           
@@ -50,7 +64,7 @@ const StatesList = ({ states, visitedStates, toggleStateVisited, loading }: Stat
             <div 
               key={state.stateId}
               className="state-item flex items-center space-x-2 p-2 rounded cursor-pointer hover:bg-gray-50"
-              onClick={() => toggleStateVisited(state.stateId, !isVisited)}
+              onClick={() => toggleStateVisited(state.stateId, !stateIsVisited)}
             >
               <div className={`w-4 h-4 rounded-full ${statusClass}`}></div>
               <span>{state.name}</span>
