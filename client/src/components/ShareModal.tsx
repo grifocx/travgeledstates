@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { Facebook, Twitter, Download, Share2 } from "lucide-react";
+import { Facebook, Twitter, Download, Share2, InfoIcon } from "lucide-react";
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -12,6 +12,18 @@ interface ShareModalProps {
 
 const ShareModal = ({ isOpen, onClose, mapImageUrl }: ShareModalProps) => {
   const [isCopying, setIsCopying] = useState(false);
+  const [isSafari, setIsSafari] = useState(false);
+  
+  useEffect(() => {
+    // Detect Safari browser
+    const userAgent = navigator.userAgent.toLowerCase();
+    setIsSafari(
+      /safari/.test(userAgent) && 
+      !/chrome/.test(userAgent) && 
+      !/firefox/.test(userAgent) &&
+      !/edg/.test(userAgent)
+    );
+  }, []);
 
   const handleDownloadImage = () => {
     if (!mapImageUrl) {
@@ -44,6 +56,17 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl }: ShareModalProps) => {
         description: "No image available to copy",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Don't even try in Safari - just download
+    if (isSafari) {
+      toast({
+        title: "Safari detected",
+        description: "Safari doesn't support copying images to clipboard. Downloading instead.",
+        duration: 3000
+      });
+      handleDownloadImage();
       return;
     }
 
@@ -98,13 +121,8 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl }: ShareModalProps) => {
               duration: 5000
             });
             
-            // Trigger download automatically
-            const link = document.createElement("a");
-            link.href = mapImageUrl;
-            link.download = "my-usa-states-map.png";
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Trigger download automatically - reuse the download function
+            handleDownloadImage();
           }
         } else {
           throw new Error("Could not create blob from canvas");
@@ -177,16 +195,23 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl }: ShareModalProps) => {
           
           {/* Secondary actions */}
           <div className="grid grid-cols-3 gap-2">
-            <Button
-              variant="outline"
-              onClick={handleCopyToClipboard}
-              disabled={!mapImageUrl || isCopying}
-              className="flex items-center justify-center"
-              size="sm"
-            >
-              <Share2 className="h-4 w-4 mr-1" />
-              {isCopying ? "..." : "Copy"}
-            </Button>
+            {!isSafari ? (
+              <Button
+                variant="outline"
+                onClick={handleCopyToClipboard}
+                disabled={!mapImageUrl || isCopying}
+                className="flex items-center justify-center"
+                size="sm"
+              >
+                <Share2 className="h-4 w-4 mr-1" />
+                {isCopying ? "..." : "Copy"}
+              </Button>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-xs text-gray-500 bg-gray-50 rounded px-1 py-2">
+                <InfoIcon className="h-3 w-3 mb-1" />
+                Safari
+              </div>
+            )}
             
             <Button
               variant="outline"
@@ -211,7 +236,9 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl }: ShareModalProps) => {
           
           {mapImageUrl && (
             <p className="text-xs text-center text-gray-500 mt-2">
-              Download the image to share it on other platforms
+              {isSafari ? 
+                "Safari doesn't support copying images directly. Please use the download button." :
+                "Download the image to share it on other platforms"}
             </p>
           )}
         </div>
