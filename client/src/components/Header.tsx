@@ -38,9 +38,9 @@ const Header = () => {
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <Link href="/">
-              <a className="text-2xl font-bold text-gray-800 hover:text-gray-600 transition-colors">
+              <span className="text-2xl font-bold text-gray-800 hover:text-gray-600 transition-colors cursor-pointer">
                 USA States Tracker
-              </a>
+              </span>
             </Link>
           </div>
 
@@ -81,7 +81,7 @@ const Header = () => {
             ) : (
               <Button asChild variant="default">
                 <Link href="/auth">
-                  <a>Sign In</a>
+                  <span>Sign In</span>
                 </Link>
               </Button>
             )}
@@ -134,10 +134,10 @@ const Header = () => {
               ) : (
                 <Button asChild variant="default" className="w-full">
                   <Link href="/auth">
-                    <a className="flex items-center">
+                    <span className="flex items-center">
                       <UserCircle className="mr-2 h-4 w-4" />
                       Sign In
-                    </a>
+                    </span>
                   </Link>
                 </Button>
               )}

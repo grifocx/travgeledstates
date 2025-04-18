@@ -1,0 +1,27 @@
+[vite] connecting...
+Warning: validateDOMNesting(...): <a> cannot appear as a descendant of &lt;a&gt;.
+a
+a
+@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:337:27
+div
+div
+div
+header
+Header@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/src/components/Header.tsx:34:43
+div
+Home@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/src/pages/Home.tsx:28:55
+Route@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:323:14
+Switch@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:380:27
+Router@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/src/App.tsx:32:46
+TooltipProviderProvider@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5AJU3CG7.js:38:13
+TooltipProvider@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js:59:43
+AuthProvider@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/src/hooks/use-auth.tsx:28:5
+QueryClientProvider@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js:2805:9
+J@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/next-themes.js:42:28
+App
+V@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/next-themes.js:44:26
+J@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/next-themes.js:42:28
+t@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12639
+value@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32772
+@https://2e1dc186-93f5-4d84-9ccb-b5bcabdfab97-00-2sn5bont8mtw5.picard.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34410
+[vite] connected.
