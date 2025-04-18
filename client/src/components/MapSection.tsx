@@ -132,6 +132,7 @@ const MapSection = ({
                           stroke: "#FFFFFF",
                           strokeWidth: 0.75,
                           outline: "none",
+                          cursor: "pointer",
                         },
                         pressed: {
                           fill: "#10B981",

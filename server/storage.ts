@@ -2,7 +2,10 @@ import {
   State, InsertState, 
   VisitedState, InsertVisitedState,
   Activity, InsertActivity,
+  states, visitedStates, activities
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // State methods
@@ -19,183 +22,91 @@ export interface IStorage {
   addActivity(activity: InsertActivity): Promise<Activity>;
 }
 
-export class MemStorage implements IStorage {
-  private states: Map<string, State>;
-  private visitedStates: Map<string, VisitedState>;
-  private activities: Activity[];
-  private currentStateId: number;
-  private currentVisitedStateId: number;
-  private currentActivityId: number;
-
-  constructor() {
-    this.states = new Map();
-    this.visitedStates = new Map();
-    this.activities = [];
-    this.currentStateId = 1;
-    this.currentVisitedStateId = 1;
-    this.currentActivityId = 1;
-    
-    // Initialize with all US states
-    this.initializeStates();
-  }
-
-  // Initialize all US states in memory
-  private initializeStates() {
-    const usStates = [
-      { stateId: 'AL', name: 'Alabama' },
-      { stateId: 'AK', name: 'Alaska' },
-      { stateId: 'AZ', name: 'Arizona' },
-      { stateId: 'AR', name: 'Arkansas' },
-      { stateId: 'CA', name: 'California' },
-      { stateId: 'CO', name: 'Colorado' },
-      { stateId: 'CT', name: 'Connecticut' },
-      { stateId: 'DE', name: 'Delaware' },
-      { stateId: 'FL', name: 'Florida' },
-      { stateId: 'GA', name: 'Georgia' },
-      { stateId: 'HI', name: 'Hawaii' },
-      { stateId: 'ID', name: 'Idaho' },
-      { stateId: 'IL', name: 'Illinois' },
-      { stateId: 'IN', name: 'Indiana' },
-      { stateId: 'IA', name: 'Iowa' },
-      { stateId: 'KS', name: 'Kansas' },
-      { stateId: 'KY', name: 'Kentucky' },
-      { stateId: 'LA', name: 'Louisiana' },
-      { stateId: 'ME', name: 'Maine' },
-      { stateId: 'MD', name: 'Maryland' },
-      { stateId: 'MA', name: 'Massachusetts' },
-      { stateId: 'MI', name: 'Michigan' },
-      { stateId: 'MN', name: 'Minnesota' },
-      { stateId: 'MS', name: 'Mississippi' },
-      { stateId: 'MO', name: 'Missouri' },
-      { stateId: 'MT', name: 'Montana' },
-      { stateId: 'NE', name: 'Nebraska' },
-      { stateId: 'NV', name: 'Nevada' },
-      { stateId: 'NH', name: 'New Hampshire' },
-      { stateId: 'NJ', name: 'New Jersey' },
-      { stateId: 'NM', name: 'New Mexico' },
-      { stateId: 'NY', name: 'New York' },
-      { stateId: 'NC', name: 'North Carolina' },
-      { stateId: 'ND', name: 'North Dakota' },
-      { stateId: 'OH', name: 'Ohio' },
-      { stateId: 'OK', name: 'Oklahoma' },
-      { stateId: 'OR', name: 'Oregon' },
-      { stateId: 'PA', name: 'Pennsylvania' },
-      { stateId: 'RI', name: 'Rhode Island' },
-      { stateId: 'SC', name: 'South Carolina' },
-      { stateId: 'SD', name: 'South Dakota' },
-      { stateId: 'TN', name: 'Tennessee' },
-      { stateId: 'TX', name: 'Texas' },
-      { stateId: 'UT', name: 'Utah' },
-      { stateId: 'VT', name: 'Vermont' },
-      { stateId: 'VA', name: 'Virginia' },
-      { stateId: 'WA', name: 'Washington' },
-      { stateId: 'WV', name: 'West Virginia' },
-      { stateId: 'WI', name: 'Wisconsin' },
-      { stateId: 'WY', name: 'Wyoming' },
-      { stateId: 'DC', name: 'District of Columbia' }
-    ];
-    
-    usStates.forEach((state, index) => {
-      const newState: State = {
-        id: index + 1,
-        stateId: state.stateId,
-        name: state.name
-      };
-      this.states.set(state.stateId, newState);
-    });
-  }
-
+export class DatabaseStorage implements IStorage {
   // Get all states
   async getStates(): Promise<State[]> {
-    return Array.from(this.states.values());
+    return db.select().from(states).orderBy(states.name);
   }
 
   // Get state by ID
   async getStateById(stateId: string): Promise<State | undefined> {
-    return this.states.get(stateId);
+    const result = await db.select().from(states).where(eq(states.stateId, stateId));
+    return result.length > 0 ? result[0] : undefined;
   }
 
   // Get visited states for a user
   async getVisitedStates(userId: string): Promise<VisitedState[]> {
-    return Array.from(this.visitedStates.values()).filter(
-      (vs) => vs.userId === userId
-    );
+    return db.select().from(visitedStates).where(eq(visitedStates.userId, userId));
   }
 
   // Toggle state visited status
   async toggleStateVisited(stateId: string, userId: string, visited: boolean): Promise<VisitedState> {
-    const key = `${userId}-${stateId}`;
-    let visitedState = this.visitedStates.get(key);
+    // Check if the record already exists
+    const existing = await db.select()
+      .from(visitedStates)
+      .where(
+        and(
+          eq(visitedStates.stateId, stateId),
+          eq(visitedStates.userId, userId)
+        )
+      );
+    
     const timestamp = new Date().toISOString();
     
-    if (visitedState) {
-      // Update existing visited state
-      visitedState = {
-        ...visitedState,
-        visited: visited,
-        visitedAt: timestamp
-      };
+    if (existing.length > 0) {
+      // Update existing record
+      const [updated] = await db.update(visitedStates)
+        .set({ 
+          visited, 
+          visitedAt: timestamp 
+        })
+        .where(
+          and(
+            eq(visitedStates.stateId, stateId),
+            eq(visitedStates.userId, userId)
+          )
+        )
+        .returning();
+      
+      return updated;
     } else {
-      // Create new visited state
-      visitedState = {
-        id: this.currentVisitedStateId++,
-        stateId,
-        userId,
-        visited,
-        visitedAt: timestamp
-      };
+      // Insert new record
+      const [newVisit] = await db.insert(visitedStates)
+        .values({
+          stateId,
+          userId,
+          visited,
+          visitedAt: timestamp
+        })
+        .returning();
+      
+      return newVisit;
     }
-    
-    this.visitedStates.set(key, visitedState);
-    return visitedState;
   }
 
   // Reset all visited states for a user
   async resetVisitedStates(userId: string): Promise<void> {
-    const keysToDelete: string[] = [];
-    
-    this.visitedStates.forEach((vs, key) => {
-      if (vs.userId === userId) {
-        keysToDelete.push(key);
-      }
-    });
-    
-    keysToDelete.forEach(key => {
-      this.visitedStates.delete(key);
-    });
+    await db.delete(visitedStates)
+      .where(eq(visitedStates.userId, userId));
   }
 
   // Get activities for a user
   async getActivities(userId: string, limit: number = 10): Promise<Activity[]> {
-    return this.activities
-      .filter(activity => activity.userId === userId)
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, limit);
+    return db.select()
+      .from(activities)
+      .where(eq(activities.userId, userId))
+      .orderBy(desc(activities.timestamp))
+      .limit(limit);
   }
 
   // Add a new activity
   async addActivity(activity: InsertActivity): Promise<Activity> {
-    const newActivity: Activity = {
-      id: this.currentActivityId++,
-      ...activity
-    };
-    
-    this.activities.push(newActivity);
-    
-    // Keep only last 50 activities per user to prevent memory issues
-    const userActivities = this.activities.filter(a => a.userId === activity.userId);
-    if (userActivities.length > 50) {
-      // Find oldest activities for this user and remove them
-      const oldestIds = userActivities
-        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-        .slice(0, userActivities.length - 50)
-        .map(a => a.id);
-      
-      this.activities = this.activities.filter(a => !oldestIds.includes(a.id));
-    }
+    const [newActivity] = await db.insert(activities)
+      .values(activity)
+      .returning();
     
     return newActivity;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
