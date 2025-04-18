@@ -61,12 +61,14 @@ The USA State Tracker is an interactive web application that allows users to vis
 - **Drizzle ORM** for database interactions
 - **PostgreSQL** for data persistence
 - **Express Session** with connect-pg-simple for session management
+- **Image Optimization** for efficient JPEG storage and sharing
 
 ### Data Model
 - **Users:** User accounts with authentication information
 - **States:** All 50 US states with metadata
 - **Visited States:** Junction table tracking which users have visited which states
 - **Activities:** Log of user actions for timeline and auditing
+- **SharedMaps:** Database storage for map image data with unique share codes for URLs
 
 ## Implementation Details
 
@@ -82,6 +84,13 @@ The USA State Tracker is an interactive web application that allows users to vis
 - State management for visited state coloring
 - Local caching for performance optimization
 
+### Sharing System
+- Server-side image storage with base64 encoding
+- Randomized share codes for secure URL generation
+- Image optimization with JPEG format and quality reduction
+- Responsive modal for sharing interaction
+- Cross-browser compatibility with database-backed approach
+
 ### State Management
 - React Query for server state management
 - Optimistic UI updates for a responsive feel
@@ -93,6 +102,8 @@ The USA State Tracker is an interactive web application that allows users to vis
 - Junction table approach for many-to-many relationships
 - Timestamps for activity tracking and sorting
 - Indexing for query performance
+- BLOB storage for map image data with share code generation
+- User-to-shared-map relation for ownership tracking
 
 ## Release Notes
 
