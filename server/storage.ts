@@ -373,6 +373,31 @@ export class DatabaseStorage implements IStorage {
         
         console.log(`Checking badge: ${badge.name}, criteria type: ${criteria.type}`);
         
+        // Define strong types for the criteria
+        interface BaseCriteria {
+          type: string;
+        }
+
+        interface StateCountCriteria extends BaseCriteria {
+          count?: number;
+          value?: number;
+        }
+
+        interface RegionCompleteCriteria extends BaseCriteria {
+          region?: string;
+          states?: string[];
+          value?: string[];
+        }
+
+        interface SpecificStatesCriteria extends BaseCriteria {
+          states?: string[];
+          value?: string[];
+          requireAll?: boolean;
+          requireAtLeastOne?: boolean;
+          andStates?: string[];
+          requireAtLeastOneFrom?: boolean;
+        }
+        
         // Normalize criteria type to handle different formats (camelCase vs snake_case)
         const criteriaType = criteria.type.replace(/_/g, '').toLowerCase();
         console.log(`Normalized criteria type: ${criteriaType}`);
@@ -441,7 +466,7 @@ export class DatabaseStorage implements IStorage {
           requiredStates = [...requiredStates];
           
           // For simple specific states badges (just visit all in list)
-          const allVisited = requiredStates.every(state => visitedStateIds.includes(state));
+          const allVisited = requiredStates.every((state: string) => visitedStateIds.includes(state));
           console.log(`Specific states badge: ${badge.name}, required all: ${requiredStates.join(", ")}, all visited: ${allVisited}`);
           
           if (allVisited) {
@@ -452,8 +477,8 @@ export class DatabaseStorage implements IStorage {
           // That we don't currently have in the database
           if (!badgeEarned && criteria.requireAtLeastOne && criteria.andStates && criteria.requireAtLeastOneFrom) {
             // Must visit at least one from first group AND at least one from second group
-            const hasFirstGroup = requiredStates.some(state => visitedStateIds.includes(state));
-            const hasSecondGroup = criteria.andStates.some(state => visitedStateIds.includes(state));
+            const hasFirstGroup = requiredStates.some((state: string) => visitedStateIds.includes(state));
+            const hasSecondGroup = criteria.andStates.some((state: string) => visitedStateIds.includes(state));
             
             console.log(`Complex badge check: has first group (${requiredStates.join(", ")}): ${hasFirstGroup}, has second group (${criteria.andStates.join(", ")}): ${hasSecondGroup}`);
             
