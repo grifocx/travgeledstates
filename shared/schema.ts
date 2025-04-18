@@ -136,21 +136,30 @@ export const insertUserBadgeSchema = createInsertSchema(userBadges).pick({
 });
 
 // Define badge criteria types for better type safety
-export const badgeCriteriaSchema = z.object({
-  type: z.enum([
-    "states_count", // Based on number of states visited
-    "region_complete", // Based on completing a specific region
-    "specific_states", // Based on visiting specific states
-    "time_period", // Based on time period (e.g., states visited in a day)
-    "pattern" // Based on patterns (alphabetical, etc.)
-  ]),
-  value: z.union([
-    z.number(),
-    z.string(),
-    z.array(z.string()),
-    z.record(z.string(), z.any())
-  ])
-});
+export const badgeCriteriaSchema = z.union([
+  // State count badges - based on number of states visited
+  z.object({
+    type: z.literal("stateCount"),
+    count: z.number()
+  }),
+  
+  // Region complete badges - based on completing a specific region
+  z.object({
+    type: z.literal("regionComplete"),
+    region: z.string(),
+    states: z.array(z.string())
+  }),
+  
+  // Specific states badges - based on visiting specific states
+  z.object({
+    type: z.literal("specificStates"),
+    states: z.array(z.string()),
+    requireAll: z.boolean().optional(),
+    requireAtLeastOne: z.boolean().optional(),
+    andStates: z.array(z.string()).optional(),
+    requireAtLeastOneFrom: z.boolean().optional()
+  })
+]);
 
 // Export types
 export type User = typeof users.$inferSelect;

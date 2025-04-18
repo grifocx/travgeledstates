@@ -1,160 +1,184 @@
 import { db } from "./db";
-import { badges } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { badges, BadgeCriteria } from "@shared/schema";
+import { sql } from "drizzle-orm";
 
-const initialBadges = [
-  // Exploration milestone badges (bronze, silver, gold, platinum)
-  {
-    name: "Explorer",
-    description: "Visit 10 different states",
-    imageUrl: "/badges/explorer.svg",
-    criteria: { type: "states_count", value: 10 },
-    tier: 1,
-    category: "milestone"
-  },
-  {
-    name: "Adventurer",
-    description: "Visit 25 different states",
-    imageUrl: "/badges/adventurer.svg",
-    criteria: { type: "states_count", value: 25 },
-    tier: 2,
-    category: "milestone"
-  },
-  {
-    name: "Voyager",
-    description: "Visit 40 different states",
-    imageUrl: "/badges/voyager.svg", 
-    criteria: { type: "states_count", value: 40 },
-    tier: 3,
-    category: "milestone"
-  },
-  {
-    name: "Globetrotter",
-    description: "Visit all 50 states - you've seen it all!",
-    imageUrl: "/badges/globetrotter.svg",
-    criteria: { type: "states_count", value: 50 },
-    tier: 4,
-    category: "milestone"
-  },
-  
-  // Regional badges
-  {
-    name: "West Coast Explorer",
-    description: "Visit all West Coast states (CA, OR, WA)",
-    imageUrl: "/badges/west-coast.svg",
-    criteria: { 
-      type: "region_complete", 
-      value: ["CA", "OR", "WA"] 
-    },
-    tier: 2,
-    category: "regional"
-  },
-  {
-    name: "East Coast Traveler",
-    description: "Visit all East Coast states (ME, NH, MA, RI, CT, NY, NJ, DE, MD, VA, NC, SC, GA, FL)",
-    imageUrl: "/badges/east-coast.svg",
-    criteria: { 
-      type: "region_complete", 
-      value: ["ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC", "SC", "GA", "FL"] 
-    },
-    tier: 3,
-    category: "regional"
-  },
-  {
-    name: "Great Lakes Voyager",
-    description: "Visit all Great Lakes states (MN, WI, MI, IL, IN, OH, PA, NY)",
-    imageUrl: "/badges/great-lakes.svg",
-    criteria: { 
-      type: "region_complete", 
-      value: ["MN", "WI", "MI", "IL", "IN", "OH", "PA", "NY"] 
-    },
-    tier: 2,
-    category: "regional"
-  },
-  {
-    name: "Southern Charm",
-    description: "Visit all Southern states (TX, OK, AR, LA, MS, AL, TN, KY, WV, VA, NC, SC, GA, FL)",
-    imageUrl: "/badges/southern.svg",
-    criteria: { 
-      type: "region_complete", 
-      value: ["TX", "OK", "AR", "LA", "MS", "AL", "TN", "KY", "WV", "VA", "NC", "SC", "GA", "FL"] 
-    },
-    tier: 3,
-    category: "regional"
-  },
-  
-  // Special badges
-  {
-    name: "Four Corners",
-    description: "Visit the Four Corners states (AZ, CO, NM, UT)",
-    imageUrl: "/badges/four-corners.svg",
-    criteria: { 
-      type: "specific_states", 
-      value: ["AZ", "CO", "NM", "UT"] 
-    },
-    tier: 2,
-    category: "special"
-  },
-  {
-    name: "Mountain Climber",
-    description: "Visit all Rocky Mountain states (MT, ID, WY, UT, CO, NM, AZ)",
-    imageUrl: "/badges/mountain.svg",
-    criteria: { 
-      type: "specific_states", 
-      value: ["MT", "ID", "WY", "UT", "CO", "NM", "AZ"] 
-    },
-    tier: 2,
-    category: "special"
-  },
-  {
-    name: "Hawaiian Paradise",
-    description: "Visit Hawaii",
-    imageUrl: "/badges/hawaii.svg",
-    criteria: { 
-      type: "specific_states", 
-      value: ["HI"] 
-    },
-    tier: 1,
-    category: "special"
-  },
-  {
-    name: "Alaskan Frontier",
-    description: "Visit Alaska",
-    imageUrl: "/badges/alaska.svg",
-    criteria: { 
-      type: "specific_states", 
-      value: ["AK"] 
-    },
-    tier: 1,
-    category: "special"
-  }
-];
+// Badge tiers
+// 1 = Bronze, 2 = Silver, 3 = Gold
 
 export async function seedBadges() {
   console.log("Checking if badges need to be seeded...");
   
-  // Check if badges already exist
-  const existingBadges = await db.select({ count: sql`count(*)` }).from(badges);
-  const badgeCount = Number(existingBadges[0]?.count || 0);
+  // Check if we already have badges
+  const existingBadges = await db.select().from(badges);
   
-  if (badgeCount > 0) {
-    console.log(`Found ${badgeCount} existing badges. Skipping seeding.`);
+  if (existingBadges.length > 0) {
+    console.log(`Found ${existingBadges.length} existing badges. Skipping seeding.`);
     return;
   }
   
   console.log("No badges found. Seeding initial badges data...");
   
-  // Insert badges
-  for (const badge of initialBadges) {
-    await db.insert(badges).values({
-      name: badge.name,
-      description: badge.description,
-      imageUrl: badge.imageUrl,
-      criteria: badge.criteria,
-      tier: badge.tier,
-      category: badge.category
-    });
-  }
+  // Milestone Badges
+  const milestoneBadges = [
+    {
+      name: "First Step",
+      description: "Visit your first state",
+      imageUrl: "/badges/milestone.svg",
+      category: "milestone",
+      tier: 1,
+      criteria: {
+        type: "stateCount",
+        count: 1
+      } as BadgeCriteria
+    },
+    {
+      name: "Adventurer",
+      description: "Visit 10 states",
+      imageUrl: "/badges/placeholder-bronze.svg",
+      category: "milestone",
+      tier: 1,
+      criteria: {
+        type: "stateCount",
+        count: 10
+      } as BadgeCriteria
+    },
+    {
+      name: "Explorer",
+      description: "Visit 25 states",
+      imageUrl: "/badges/placeholder-silver.svg",
+      category: "milestone",
+      tier: 2,
+      criteria: {
+        type: "stateCount",
+        count: 25
+      } as BadgeCriteria
+    },
+    {
+      name: "Voyager",
+      description: "Visit 40 states",
+      imageUrl: "/badges/placeholder-gold.svg",
+      category: "milestone",
+      tier: 3,
+      criteria: {
+        type: "stateCount",
+        count: 40
+      } as BadgeCriteria
+    },
+    {
+      name: "Completionist",
+      description: "Visit all 50 states",
+      imageUrl: "/badges/placeholder-gold.svg",
+      category: "milestone",
+      tier: 3,
+      criteria: {
+        type: "stateCount",
+        count: 50
+      } as BadgeCriteria
+    }
+  ];
   
-  console.log(`Successfully seeded ${initialBadges.length} badges.`);
+  // Regional Badges
+  const regionalBadges = [
+    {
+      name: "Northeast Explorer",
+      description: "Visit all states in the Northeast region",
+      imageUrl: "/badges/regional.svg",
+      category: "regional",
+      tier: 2,
+      criteria: {
+        type: "regionComplete",
+        region: "northeast",
+        states: ["ME", "NH", "VT", "MA", "RI", "CT", "NY", "NJ", "PA"]
+      } as BadgeCriteria
+    },
+    {
+      name: "Southeast Adventurer",
+      description: "Visit all states in the Southeast region",
+      imageUrl: "/badges/regional.svg",
+      category: "regional",
+      tier: 2,
+      criteria: {
+        type: "regionComplete",
+        region: "southeast",
+        states: ["DE", "MD", "VA", "WV", "KY", "NC", "SC", "TN", "GA", "FL", "AL", "MS", "AR", "LA"]
+      } as BadgeCriteria
+    },
+    {
+      name: "Midwest Voyager",
+      description: "Visit all states in the Midwest region",
+      imageUrl: "/badges/regional.svg",
+      category: "regional",
+      tier: 2,
+      criteria: {
+        type: "regionComplete",
+        region: "midwest",
+        states: ["OH", "IN", "IL", "MI", "WI", "MN", "IA", "MO", "ND", "SD", "NE", "KS"]
+      } as BadgeCriteria
+    },
+    {
+      name: "Southwest Pioneer",
+      description: "Visit all states in the Southwest region",
+      imageUrl: "/badges/regional.svg",
+      category: "regional",
+      tier: 2,
+      criteria: {
+        type: "regionComplete",
+        region: "southwest",
+        states: ["TX", "OK", "NM", "AZ"]
+      } as BadgeCriteria
+    },
+    {
+      name: "West Coast Traveler",
+      description: "Visit all states on the West Coast",
+      imageUrl: "/badges/regional.svg",
+      category: "regional",
+      tier: 2,
+      criteria: {
+        type: "regionComplete",
+        region: "westCoast",
+        states: ["CA", "OR", "WA"]
+      } as BadgeCriteria
+    }
+  ];
+  
+  // Special Badges
+  const specialBadges = [
+    {
+      name: "Four Corners",
+      description: "Visit all four states that meet at the Four Corners Monument",
+      imageUrl: "/badges/special.svg",
+      category: "special",
+      tier: 2,
+      criteria: {
+        type: "specificStates",
+        states: ["UT", "CO", "AZ", "NM"],
+        requireAll: true
+      } as BadgeCriteria
+    },
+    {
+      name: "Coast to Coast",
+      description: "Visit both the Atlantic and Pacific coasts",
+      imageUrl: "/badges/special.svg", 
+      category: "special",
+      tier: 2,
+      criteria: {
+        type: "specificStates",
+        states: ["ME", "NH", "MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC", "SC", "GA", "FL"],
+        requireAtLeastOne: true,
+        andStates: ["CA", "OR", "WA"],
+        requireAtLeastOneFrom: true
+      } as BadgeCriteria
+    }
+  ];
+  
+  // Combine all badges
+  const allBadges = [...milestoneBadges, ...regionalBadges, ...specialBadges];
+  
+  // Insert badges into the database
+  try {
+    const insertedBadges = await db.insert(badges).values(allBadges).returning();
+    console.log(`Successfully seeded ${insertedBadges.length} badges.`);
+  } catch (error) {
+    console.error("Error seeding badges:", error);
+  }
 }

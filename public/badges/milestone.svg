@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Milestone Badge</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle fill="#4CAF50" cx="100" cy="100" r="90"></circle>
+        <circle fill="#C8E6C9" cx="100" cy="100" r="75"></circle>
+        <path d="M145,85 L95,135 L65,105 L50,120 L95,165 L160,100 L145,85" fill="#4CAF50"></path>
+    </g>
+</svg>

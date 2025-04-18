@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Special Badge</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle fill="#9C27B0" cx="100" cy="100" r="90"></circle>
+        <circle fill="#E1BEE7" cx="100" cy="100" r="75"></circle>
+        <path d="M100,40 L120,60 L150,65 L140,95 L150,125 L120,130 L100,150 L80,130 L50,125 L60,95 L50,65 L80,60 Z" fill="#9C27B0"></path>
+    </g>
+</svg>

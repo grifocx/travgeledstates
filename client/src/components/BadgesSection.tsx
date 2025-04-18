@@ -21,30 +21,40 @@ interface BadgesSectionProps {
   userId: string;
 }
 
+interface BadgeResponse {
+  newBadgesEarned: boolean;
+  badges: Badge[];
+}
+
 export function BadgesSection({ userId }: BadgesSectionProps) {
   const { toast } = useToast();
   
   // Fetch all badges
   const badgesQuery = useQuery({
     queryKey: ['/api/badges'],
-    queryFn: getQueryFn<Badge[]>(),
+    queryFn: getQueryFn<Badge[]>({
+      on401: "returnNull"
+    }),
   });
   
   // Fetch user badges
   const userBadgesQuery = useQuery({
     queryKey: ['/api/user-badges', userId],
-    queryFn: getQueryFn<{badge: Badge, userBadge: UserBadge}[]>(),
+    queryFn: getQueryFn<{badge: Badge, userBadge: UserBadge}[]>({
+      on401: "returnNull"
+    }),
     enabled: !!userId,
   });
   
   // Check for new badges mutation
   const checkBadgesMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/check-badges/${userId}`, {
+      const response = await apiRequest<BadgeResponse>(`/api/check-badges/${userId}`, {
         method: 'POST',
       });
+      return response;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: BadgeResponse) => {
       if (data.newBadgesEarned) {
         // Show a toast for each new badge
         data.badges.forEach((badge: Badge) => {

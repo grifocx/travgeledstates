@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Gold Badge</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle fill="#FFD700" cx="100" cy="100" r="90"></circle>
+        <circle fill="#FFECB3" cx="100" cy="100" r="75"></circle>
+        <path d="M100,30 L115,82 L170,82 L125,113 L145,165 L100,135 L55,165 L75,113 L30,82 L85,82 Z" fill="#FFD700"></path>
+    </g>
+</svg>
