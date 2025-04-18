@@ -47,7 +47,12 @@ export function BadgesSection({ userId }: BadgesSectionProps) {
       
       const response = await fetch(`/api/user-badges/${userId}`);
       if (!response.ok) {
-        console.error('Error fetching user badges:', response.statusText);
+        // Use toast for user-visible errors instead of console.error
+        toast({
+          title: "Error loading badges",
+          description: `Failed to fetch badges: ${response.status} ${response.statusText}`,
+          variant: "destructive",
+        });
         return [];
       }
       
@@ -95,10 +100,15 @@ export function BadgesSection({ userId }: BadgesSectionProps) {
     onError: (error) => {
       toast({
         title: "Error checking badges",
-        description: "There was an error checking for new badges.",
+        description: "There was an error checking for new badges. Please try again later.",
         variant: "destructive",
       });
-      console.error("Error checking badges:", error);
+      // Log the error to the console with an improved message
+      if (error instanceof Error) {
+        console.error(`Badge check failed: ${error.message}`);
+      } else {
+        console.error("Badge check failed with unknown error type");
+      }
     },
   });
   
