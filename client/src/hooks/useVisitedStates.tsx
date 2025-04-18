@@ -94,9 +94,37 @@ export const useVisitedStates = () => {
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (newVisitedState) => {
+      // Optimistically update the cache to reflect the change immediately
+      queryClient.setQueryData(
+        [`/api/visited-states/${userId}`],
+        (oldData: VisitedState[] | undefined) => {
+          if (!oldData) return [newVisitedState];
+          
+          // Check if this state already exists in the cache
+          const existingIndex = oldData.findIndex(vs => vs.stateId === newVisitedState.stateId);
+          
+          if (existingIndex >= 0) {
+            // Replace the existing entry
+            const newData = [...oldData];
+            newData[existingIndex] = newVisitedState;
+            return newData;
+          } else {
+            // Add the new entry
+            return [...oldData, newVisitedState];
+          }
+        }
+      );
+      
+      // Still invalidate the queries to ensure data is fresh
       queryClient.invalidateQueries({ queryKey: [`/api/visited-states/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/activities/${userId}`] });
+      
+      // Show a toast notification
+      toast({
+        title: newVisitedState.visited ? "State marked as visited" : "State marked as unvisited",
+        description: `${states.find(s => s.stateId === newVisitedState.stateId)?.name || newVisitedState.stateId} has been updated.`,
+      });
     },
     onError: (error) => {
       toast({
