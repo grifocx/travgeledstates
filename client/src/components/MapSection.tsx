@@ -7,7 +7,6 @@ import {
 import { Tooltip } from "@/components/ui/tooltip";
 import { VisitedState, State } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Minus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
@@ -64,7 +63,6 @@ const MapSection = ({
   isStateVisited: isStateVisitedProp, // Rename to avoid conflict with state
   stats
 }: MapSectionProps) => {
-  const [position, setPosition] = useState({ zoom: 1, coordinates: [0, 0] });
   const [mobileInfoVisible, setMobileInfoVisible] = useState(false);
   const [selectedStateName, setSelectedStateName] = useState("");
   const [isStateVisited, setIsStateVisited] = useState(false);
@@ -169,19 +167,7 @@ const MapSection = ({
     }
   }, [selectedState, states, checkIfStateVisited]);
 
-  const handleZoomIn = () => {
-    if (position.zoom >= 4) return;
-    setPosition(prev => ({ ...prev, zoom: prev.zoom * 1.2 }));
-  };
-
-  const handleZoomOut = () => {
-    if (position.zoom <= 1) return;
-    setPosition(prev => ({ ...prev, zoom: prev.zoom / 1.2 }));
-  };
-
-  const handleResetZoom = () => {
-    setPosition({ zoom: 1, coordinates: [0, 0] });
-  };
+  // Zoom controls removed
 
   const handleToggleSelectedState = () => {
     if (selectedState) {
@@ -360,33 +346,7 @@ const MapSection = ({
           </div>
         </div>
         
-        {/* Map Controls */}
-        <div className="mt-4 flex flex-wrap justify-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleZoomIn}
-            className="p-2 rounded bg-gray-100 hover:bg-gray-200"
-          >
-            <Plus className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleZoomOut}
-            className="p-2 rounded bg-gray-100 hover:bg-gray-200"
-          >
-            <Minus className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleResetZoom}
-            className="p-2 rounded bg-gray-100 hover:bg-gray-200"
-          >
-            <RotateCcw className="h-5 w-5" />
-          </Button>
-        </div>
+        {/* Map Controls Removed */}
       </div>
     </div>
   );
