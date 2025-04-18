@@ -1,14 +1,16 @@
-# USA State Tracker v1.1.0
+# USA State Tracker v1.3.0
 
-An interactive web application to track and visualize which US states you have visited.
+An interactive web application to track, visualize, and gamify your journey across the United States.
 
 ## Overview
 
 The USA State Tracker allows users to:
 - Mark states they've visited on an interactive US map
 - Track progress with statistics and visualizations
-- Create an account to save visited states
+- Earn achievement badges as they explore more states
+- Create an account to save visited states and earned badges
 - Generate shareable links to show others their travel progress
+- View a personalized travel achievement dashboard
 
 ## Getting Started
 
@@ -53,23 +55,35 @@ npm run dev
 
 ### Interactive Map
 - Color-coded visualization of visited and unvisited states
-- Simple and clean interface
+- Simple and clean interface with custom USA map logo
 - Click on states to mark them as visited/unvisited
+- Animated visual elements for better user engagement
 
 ### User Authentication
 - Create an account to save your visited states
 - Login to access your saved data from any device
 - Anonymous mode available for quick exploration
+- Secure session management with persistent login
+
+### Achievement Badges
+- Earn badges for exploration milestones and regional completions
+- Dynamic SVG-based badges with tier-specific styling
+- Smooth animations when unlocking new achievements
+- Interactive badge display with detailed information
+- Multiple badge categories rewarding different travel patterns
+- Automated badge evaluation based on visited states
 
 ### Statistics Dashboard
-- See percentage of states visited
-- View recent activity
-- Track progress over time
+- See percentage of states visited with visual indicators
+- View recent activity in a chronological timeline
+- Track progress over time with detailed metrics
+- Monitor achievement progress across different categories
 
 ### Sharing
 - Generate a shareable link with database-stored map images
 - View and download others' visited states through their shared links
 - Open shared maps in new tabs with dedicated URLs
+- Optimized image quality for efficient sharing
 
 ## Usage
 
@@ -82,34 +96,65 @@ npm run dev
 ### Marking States as Visited
 1. Click directly on a state in the map or find it in the list below
 2. States marked as visited will appear in green
+3. Your achievements will automatically update as you mark states
+
+### Earning Achievements
+1. Mark states as visited to automatically earn badges
+2. View your earned badges in the Achievements section
+3. Click on any badge to see detailed information about criteria and earned date
+4. Unlock higher-tier badges by completing specific regional collections or visiting milestone numbers of states
 
 ### Sharing Your Progress
 1. Click the "Share" button in the dashboard
 2. Copy the provided URL to share with others
+3. View your map with achievements in a shareable format
 
 ## Technologies Used
 
-- **Frontend**: React, TanStack Query, Tailwind CSS, shadcn/ui
-- **Backend**: Node.js, Express, Passport.js
-- **Database**: PostgreSQL with Drizzle ORM
-- **Visualization**: React Simple Maps
+- **Frontend**: 
+  - React and TypeScript for robust component architecture
+  - TanStack Query for efficient data fetching and caching
+  - Tailwind CSS with shadcn/ui for modern UI design
+  - Framer Motion for smooth animations and transitions
+  - React SVG for dynamic badge and logo rendering
+  - React Simple Maps for interactive map visualization
+  
+- **Backend**: 
+  - Node.js with Express for API endpoints
+  - Passport.js for secure authentication
+  - Drizzle ORM for type-safe database operations
+  - Zod for comprehensive data validation
+  
+- **Database**: 
+  - PostgreSQL for reliable data persistence
+  - JSON fields for flexible achievement criteria storage
+  - Efficient relation modeling for badges and user achievements
 
-## Latest Release - v1.1.0
+## Latest Release - v1.3.0
 
 ### Major Updates
-- Improved map sharing with database-stored images instead of clipboard-based sharing
-- Added dedicated shareable URLs with improved cross-browser compatibility
-- Optimized image size and quality for faster sharing and lower bandwidth usage
-- Enhanced server configuration to handle larger image payloads
-- Simplified map interface by removing unused zoom controls
-- Fixed issues with Safari browser compatibility for sharing
+- Enhanced visual branding with custom USA map logo:
+  - Added dynamic SVG-based logo in the application header
+  - Implemented automatic favicon generation using the logo design
+  - Added subtle animations for improved user engagement
+- Upgraded badge system visualization:
+  - Replaced static badge images with dynamic SVG rendering
+  - Added smooth animations for newly earned badges
+  - Created tier-specific visual styling (bronze, silver, gold, platinum)
+  - Improved badge display with interactive tooltips
 
-### Previous Release - v1.0.0
-- Fixed state tracking functionality for complete UI/database synchronization
-- Improved state coloring persistence across sessions
-- Enhanced error handling throughout the application
-- Added robust state identification with name-to-code mapping
-- Optimized data flow for better performance
+### Previous Release - v1.2.0
+- Implemented comprehensive achievement badge system:
+  - Added database schema for badges and user achievements
+  - Created multiple badge categories (Exploration, Regional, Special)
+  - Designed JSON-based criteria evaluation system
+  - Added automatic badge awarding based on state visitation
+  - Built badge display UI with earned vs. unearned states
+  - Implemented badge details with criteria and earned dates
+
+### Earlier Releases
+- **v1.1.0**: Enhanced map sharing with database-stored images
+- **v1.0.0**: Initial release with core map and state tracking functionality
 
 For full details, see the [CHANGELOG.md](CHANGELOG.md) file.
 
@@ -126,3 +171,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [React Simple Maps](https://www.react-simple-maps.io/) for the map visualization
 - [Shadcn/UI](https://ui.shadcn.com/) for the beautiful UI components
 - [TanStack Query](https://tanstack.com/query) for data-fetching capabilities
+- [Framer Motion](https://www.framer.com/motion/) for smooth animations
+- [React SVG](https://github.com/tanem/react-svg) for dynamic SVG rendering
+- [Drizzle ORM](https://orm.drizzle.team/) for PostgreSQL integration
+- [Zod](https://zod.dev/) for robust data validation
