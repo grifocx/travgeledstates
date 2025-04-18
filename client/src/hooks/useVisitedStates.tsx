@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Activity, State, VisitedState } from "@shared/schema";
 import { usaStatesData } from "@/lib/usaStatesData";
 import { toast } from "@/hooks/use-toast";
+import { z } from "zod";
 
 // Generate a simple user ID for the session (in a real app, this would be authenticated)
 const getUserId = () => {
@@ -19,32 +20,57 @@ export const useVisitedStates = () => {
   const userId = getUserId();
   const queryClient = useQueryClient();
   
-  // Fetch states
+  // Define Zod schemas for type safety
+  const StateSchema = z.array(z.object({
+    id: z.number(),
+    stateId: z.string(),
+    name: z.string(),
+  }));
+
+  const VisitedStateSchema = z.array(z.object({
+    id: z.number(),
+    stateId: z.string(),
+    userId: z.string(),
+    visited: z.boolean(),
+    visitedAt: z.string(),
+    notes: z.string().nullable().optional(),
+  }));
+
+  const ActivitySchema = z.array(z.object({
+    id: z.number(),
+    userId: z.string(),
+    stateId: z.string(),
+    stateName: z.string(),
+    action: z.string(),
+    timestamp: z.string(),
+  }));
+
+  // Fetch states with type safety
   const { 
     data: states = [],
     isLoading: statesLoading,
     error: statesError
-  } = useQuery({
+  } = useQuery<State[], Error, State[]>({
     queryKey: ["/api/states"],
     staleTime: Infinity, // States don't change
   });
   
-  // Fetch visited states
+  // Fetch visited states with type safety
   const { 
     data: visitedStates = [],
     isLoading: visitedStatesLoading,
     error: visitedStatesError,
-  } = useQuery({
+  } = useQuery<VisitedState[], Error, VisitedState[]>({
     queryKey: [`/api/visited-states/${userId}`],
     refetchOnWindowFocus: true,
   });
   
-  // Fetch activities
+  // Fetch activities with type safety
   const { 
     data: activities = [],
     isLoading: activitiesLoading,
     error: activitiesError
-  } = useQuery({
+  } = useQuery<Activity[], Error, Activity[]>({
     queryKey: [`/api/activities/${userId}`],
     refetchOnWindowFocus: true,
   });
@@ -99,7 +125,7 @@ export const useVisitedStates = () => {
   
   // Calculate statistics
   const stats = useMemo(() => {
-    const visitedCount = visitedStates.filter(vs => vs.visited).length;
+    const visitedCount = visitedStates.filter((vs: VisitedState) => vs.visited).length;
     const totalStates = states.length || 50; // Fallback to 50 if API hasn't loaded yet
     const percentage = Math.round((visitedCount / totalStates) * 100) || 0;
     
