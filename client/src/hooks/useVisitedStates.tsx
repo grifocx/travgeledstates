@@ -137,6 +137,7 @@ export const useVisitedStates = () => {
   
   // Function to toggle state visited status
   const toggleStateVisited = (stateId: string, visited: boolean) => {
+    console.log(`Toggling state ${stateId} to ${visited ? 'visited' : 'unvisited'}`);
     toggleVisitedMutation.mutate({ stateId, visited });
   };
   

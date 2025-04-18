@@ -25,10 +25,17 @@ const Home = () => {
   // Generate a share URL when the modal is opened
   useEffect(() => {
     if (showShareModal) {
-      const shareCode = Math.random().toString(36).substring(2, 10);
-      setShareUrl(`${window.location.origin}/share/${shareCode}`);
+      const userId = localStorage.getItem("user_id") || "anonymous";
+      const stateIds = visitedStates
+        .filter(vs => vs.visited)
+        .map(vs => vs.stateId)
+        .join(',');
+      
+      // Create a shareable URL with visited states encoded
+      const shareCode = btoa(`${userId}:${stateIds}`);
+      setShareUrl(`${window.location.origin}?share=${shareCode}`);
     }
-  }, [showShareModal]);
+  }, [showShareModal, visitedStates]);
 
   const handleShare = () => {
     setShowShareModal(true);

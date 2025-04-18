@@ -10,6 +10,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Minus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Define TypeScript types for Geography data
+interface GeoFeature {
+  rsmKey: string;
+  properties: {
+    iso_3166_2: string;
+    name: string;
+    [key: string]: any;
+  };
+  geometry: any;
+}
+
 // Import the US topojson map data from CDN
 const geoUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
@@ -108,8 +119,8 @@ const MapSection = ({
             }}
           >
             <Geographies geography={geoUrl}>
-              {({ geographies }) =>
-                geographies.map(geo => {
+              {({ geographies }: { geographies: GeoFeature[] }) =>
+                geographies.map((geo: GeoFeature) => {
                   const stateId = geo.properties.iso_3166_2;
                   const isVisited = visitedStatesMap.get(stateId) === true;
                   const isSelected = selectedState === stateId;
