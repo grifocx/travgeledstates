@@ -41,7 +41,7 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl, userId }: ShareModalProps) =
       // Create a temporary link element to download the image
       const link = document.createElement("a");
       link.href = mapImageUrl;
-      link.download = "my-usa-states-map.png";
+      link.download = "my-usa-states-map.jpg";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

@@ -99,12 +99,12 @@ const Home = () => {
         throw new Error("Map container not found");
       }
       
-      // Capture the map as a data URL with lower quality to reduce payload size
-      const dataUrl = await htmlToImage.toPng(mapContainer as HTMLElement, {
-        quality: 0.75, // Reduced quality to save bandwidth
+      // Capture the map as a JPEG data URL (more efficient than PNG for this use case)
+      const dataUrl = await htmlToImage.toJpeg(mapContainer as HTMLElement, {
+        quality: 0.5, // Very low quality to minimize file size
         backgroundColor: "#ffffff",
-        width: 800, // Limit width to reduce size
-        height: 600, // Limit height to reduce size 
+        width: 600, // Smaller width to reduce size
+        height: 450, // Smaller height to reduce size
         // Optional: Filter out any external resources that might cause CORS issues
         filter: (node) => {
           // Skip SVG <use> elements that reference external resources
