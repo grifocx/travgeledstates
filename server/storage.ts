@@ -322,6 +322,16 @@ export class DatabaseStorage implements IStorage {
     const userBadgeIds = userBadgesResult.map(ub => ub.badge.id);
     
     const allBadges = await this.getAllBadges();
+    
+    // Debug: print raw criteria data from badges
+    console.log("DEBUGGING BADGE CRITERIA:");
+    allBadges.forEach(badge => {
+      const criteriaStr = typeof badge.criteria === 'string' 
+        ? badge.criteria 
+        : JSON.stringify(badge.criteria);
+      console.log(`Badge ${badge.id}: ${badge.name}, Criteria: ${criteriaStr}`);
+    });
+    
     const unearnedBadges = allBadges.filter(badge => !userBadgeIds.includes(badge.id));
     
     console.log(`User has ${userBadgeIds.length} badges already, checking ${unearnedBadges.length} unearned badges`);
@@ -331,15 +341,41 @@ export class DatabaseStorage implements IStorage {
     
     for (const badge of unearnedBadges) {
       try {
-        // Make sure criteria is properly parsed
-        const criteria = typeof badge.criteria === 'string' 
-          ? JSON.parse(badge.criteria as unknown as string) as BadgeCriteria 
-          : badge.criteria as unknown as BadgeCriteria;
+        console.log(`Processing badge: ${badge.name} (${badge.id})`);
+        console.log(`Raw criteria data: ${JSON.stringify(badge.criteria)}`);
+        
+        // Attempt to parse criteria if needed
+        let criteria: any;
+        try {
+          criteria = typeof badge.criteria === 'string' 
+            ? JSON.parse(badge.criteria) 
+            : badge.criteria;
+        } catch (parseError) {
+          console.error(`Error parsing criteria for badge ${badge.name}:`, parseError);
+          console.log(`Problematic criteria value:`, badge.criteria);
+          continue; // Skip this badge
+        }
+        
+        // Handle case where criteria might be double-stringified
+        if (typeof criteria === 'string') {
+          try {
+            criteria = JSON.parse(criteria);
+          } catch (e) {
+            console.log(`Note: Criteria was string but not JSON: ${criteria}`);
+          }
+        }
+        
+        // Check if criteria has the expected type property
+        if (!criteria || !criteria.type) {
+          console.error(`Badge ${badge.name} has invalid criteria format:`, criteria);
+          continue;
+        }
         
         console.log(`Checking badge: ${badge.name}, criteria type: ${criteria.type}`);
         
         // Normalize criteria type to handle different formats (camelCase vs snake_case)
         const criteriaType = criteria.type.replace(/_/g, '').toLowerCase();
+        console.log(`Normalized criteria type: ${criteriaType}`);
         
         if (criteriaType === 'statecount' || criteriaType === 'statescount') {
           // State count badge - check if user has visited enough states
@@ -353,7 +389,7 @@ export class DatabaseStorage implements IStorage {
             newlyEarnedBadges.push(badge);
           }
         }
-        else if (criteriaType === 'regioncomplete' || criteriaType === 'regioncomplete') {
+        else if (criteriaType === 'regioncomplete') {
           // Region complete badge - check if all states in region visited
           const regionStates = criteria.states;
           const visitedRegionStates = visitedStateIds.filter(id => regionStates.includes(id));
@@ -370,7 +406,7 @@ export class DatabaseStorage implements IStorage {
             newlyEarnedBadges.push(badge);
           }
         }
-        else if (criteriaType === 'specificstates' || criteriaType === 'specificstates') {
+        else if (criteriaType === 'specificstates') {
           let badgeEarned = false;
           
           // Specific states badge - check specific combinations
