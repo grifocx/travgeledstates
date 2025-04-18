@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { 
   ComposableMap,
   Geographies,
@@ -49,57 +49,77 @@ const MapSection = ({
   const [selectedStateName, setSelectedStateName] = useState("");
   const [isStateVisited, setIsStateVisited] = useState(false);
 
-  // Force component to update when visitedStates change
-  const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
+  // Use local state management for visited states
+  const [localVisitedStates, setLocalVisitedStates] = useState<Map<string, boolean>>(new Map());
+  const firstRenderRef = useRef(true);
+  const queryClient = useQueryClient();
   
-  // Convert visitedStates array to a map for easy lookup
-  // Use useMemo to properly cache and update the map only when visitedStates changes
-  const visitedStatesMap = useMemo(() => {
-    const stateMap = new Map();
-    
-    // Detailed logging for debugging
-    console.log(`MapSection: Creating map with ${visitedStates.length} visited states (update #${forceUpdateCounter})`);
-    
-    // Dump all visited states for debugging
-    if (visitedStates.length > 0) {
-      visitedStates.forEach((vs: VisitedState, index) => {
-        console.log(`MapSection state #${index}: ${vs.stateId} = ${vs.visited ? 'VISITED' : 'not visited'}`);
-        stateMap.set(vs.stateId, vs.visited);
+  // Initialize localVisitedStates from visitedStates prop only once on mount
+  useEffect(() => {
+    if (firstRenderRef.current && visitedStates.length > 0) {
+      console.log("MapSection: Initializing local visited states from props");
+      const newMap = new Map<string, boolean>();
+      
+      visitedStates.forEach((vs: VisitedState) => {
+        newMap.set(vs.stateId, vs.visited);
+        console.log(`MapSection: Initialized ${vs.stateId} = ${vs.visited ? 'VISITED' : 'NOT VISITED'}`);
       });
-    } else {
-      console.log("MapSection: No visited states found!");
+      
+      setLocalVisitedStates(newMap);
+      firstRenderRef.current = false;
+    }
+  }, [visitedStates]);
+  
+  // Check if a state is visited - prefer isStateVisitedProp if available
+  const checkIfStateVisited = useCallback((stateId: string): boolean => {
+    if (isStateVisitedProp) {
+      return isStateVisitedProp(stateId);
     }
     
-    return stateMap;
-  }, [visitedStates, forceUpdateCounter]);
+    // Then check our local state
+    if (localVisitedStates.has(stateId)) {
+      return localVisitedStates.get(stateId) || false;
+    }
+    
+    // Finally fall back to visitedStates prop
+    return visitedStates.some(vs => vs.stateId === stateId && vs.visited);
+  }, [isStateVisitedProp, localVisitedStates, visitedStates]);
   
-  // Force re-render when visitedStates changes
-  useEffect(() => {
-    console.log("MapSection: visitedStates changed, forcing update");
-    setForceUpdateCounter(prev => prev + 1);
-  }, [visitedStates]);
+  // Handle state clicks with immediate visual feedback
+  const handleStateToggle = useCallback((stateId: string) => {
+    // Toggle the current state
+    const currentStatus = checkIfStateVisited(stateId);
+    const newStatus = !currentStatus;
+    
+    console.log(`MapSection: User toggled ${stateId} from ${currentStatus ? 'VISITED' : 'NOT VISITED'} to ${newStatus ? 'VISITED' : 'NOT VISITED'}`);
+    
+    // Update local state immediately
+    setLocalVisitedStates(prev => {
+      const newMap = new Map(prev);
+      newMap.set(stateId, newStatus);
+      return newMap;
+    });
+    
+    // Call the parent's toggle function
+    toggleStateVisited(stateId, newStatus);
+  }, [checkIfStateVisited, toggleStateVisited]);
 
+  // Update selected state info when selection changes
   useEffect(() => {
     if (selectedState) {
       const state = states.find(s => s.stateId === selectedState);
       setSelectedStateName(state ? state.name : "");
       
-      // Check if state is visited using the isStateVisitedProp function if available
-      let stateVisited = false;
-      if (isStateVisitedProp) {
-        stateVisited = isStateVisitedProp(selectedState);
-        console.log(`Using isStateVisitedProp function: ${selectedState} is ${stateVisited ? 'visited' : 'not visited'}`);
-      } else {
-        stateVisited = visitedStatesMap.get(selectedState) === true;
-        console.log(`Using visitedStatesMap: ${selectedState} is ${stateVisited ? 'visited' : 'not visited'}`);
-      }
+      // Use our checkIfStateVisited function for consistency
+      const stateVisited = checkIfStateVisited(selectedState);
+      console.log(`Selected state ${selectedState} is ${stateVisited ? 'visited' : 'not visited'}`);
       
       setIsStateVisited(stateVisited);
       setMobileInfoVisible(true);
     } else {
       setMobileInfoVisible(false);
     }
-  }, [selectedState, states, visitedStatesMap, isStateVisitedProp]);
+  }, [selectedState, states, checkIfStateVisited]);
 
   const handleZoomIn = () => {
     if (position.zoom >= 4) return;
@@ -117,7 +137,7 @@ const MapSection = ({
 
   const handleToggleSelectedState = () => {
     if (selectedState) {
-      toggleStateVisited(selectedState, !isStateVisited);
+      handleStateToggle(selectedState);
     }
   };
 
@@ -162,21 +182,15 @@ const MapSection = ({
                 geographies.map((geo: GeoFeature) => {
                   const stateId = geo.properties.iso_3166_2;
                   
-                  // First check using our direct isStateVisited function if available
-                  let stateVisited = false;
-                  if (isStateVisitedProp) {
-                    stateVisited = isStateVisitedProp(stateId);
-                  } else {
-                    // Fall back to the visitedStatesMap
-                    stateVisited = visitedStatesMap.get(stateId) === true;
-                  }
+                  // Use our consistent function to check state visited status
+                  const stateVisited = checkIfStateVisited(stateId);
                   
                   const isSelected = selectedState === stateId;
                   const stateName = states.find(s => s.stateId === stateId)?.name || geo.properties.name;
                   
                   // Debug logging for specific states
                   if (stateId === "CA" || stateId === "NY" || stateId === "TX" || stateId === "FL" || stateId === selectedState) {
-                    console.log(`Rendering state ${stateId} (${stateName}): visited=${stateVisited}, selected=${isSelected}, visitedInMap=${visitedStatesMap.get(stateId)}`);
+                    console.log(`Rendering state ${stateId} (${stateName}): visited=${stateVisited}, selected=${isSelected}`);
                   }
                   
                   // Set fill color based on state
@@ -185,9 +199,9 @@ const MapSection = ({
                   
                   return (
                     <Geography
-                      key={`${geo.rsmKey}-${stateVisited ? 'visited' : 'not'}-${forceUpdateCounter}`}
+                      key={`${geo.rsmKey}-${stateVisited ? 'visited' : 'not'}`}
                       geography={geo}
-                      onClick={() => handleStateClick(stateId, stateName)}
+                      onClick={() => handleStateToggle(stateId)}
                       style={{
                         default: {
                           fill: fillColor,
