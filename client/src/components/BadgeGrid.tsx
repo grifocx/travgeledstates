@@ -1,7 +1,8 @@
 import { Badge, UserBadge } from "@shared/schema";
 import { BadgeItem } from "./BadgeItem";
-import { EmptyPlaceholder } from "@/components/ui/empty-placeholder";
 import { Award } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface BadgeGridProps {
   badges: Badge[];
@@ -20,15 +21,15 @@ export function BadgeGrid({
 }: BadgeGridProps) {
   if (!badges || badges.length === 0) {
     return (
-      <EmptyPlaceholder className="min-h-[200px]">
-        <EmptyPlaceholder.Icon>
-          <Award />
-        </EmptyPlaceholder.Icon>
-        <EmptyPlaceholder.Title>No Badges</EmptyPlaceholder.Title>
-        <EmptyPlaceholder.Description>
-          {emptyMessage}
-        </EmptyPlaceholder.Description>
-      </EmptyPlaceholder>
+      <Card className="min-h-[200px] flex flex-col items-center justify-center text-center p-6">
+        <CardContent className="flex flex-col items-center pt-6">
+          <div className="mb-4 rounded-full bg-muted p-3">
+            <Award className="h-8 w-8" />
+          </div>
+          <CardTitle className="text-xl mb-2">No Badges</CardTitle>
+          <CardDescription>{emptyMessage}</CardDescription>
+        </CardContent>
+      </Card>
     );
   }
   
@@ -44,15 +45,15 @@ export function BadgeGrid({
   
   if (!showAll && displayBadges.length === 0) {
     return (
-      <EmptyPlaceholder className="min-h-[200px]">
-        <EmptyPlaceholder.Icon>
-          <Award />
-        </EmptyPlaceholder.Icon>
-        <EmptyPlaceholder.Title>No Badges Earned Yet</EmptyPlaceholder.Title>
-        <EmptyPlaceholder.Description>
-          Keep exploring to earn badges!
-        </EmptyPlaceholder.Description>
-      </EmptyPlaceholder>
+      <Card className="min-h-[200px] flex flex-col items-center justify-center text-center p-6">
+        <CardContent className="flex flex-col items-center pt-6">
+          <div className="mb-4 rounded-full bg-muted p-3">
+            <Award className="h-8 w-8" />
+          </div>
+          <CardTitle className="text-xl mb-2">No Badges Earned Yet</CardTitle>
+          <CardDescription>Keep exploring to earn badges!</CardDescription>
+        </CardContent>
+      </Card>
     );
   }
   

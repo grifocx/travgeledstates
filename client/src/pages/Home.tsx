@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import MapSection from "@/components/MapSection";
 import StateDashboard from "@/components/StateDashboard";
 import StatesList from "@/components/StatesList";
+import { BadgesSection } from "@/components/BadgesSection";
 import Footer from "@/components/Footer";
 import ShareModal from "@/components/ShareModal";
 import { useVisitedStates } from "@/hooks/useVisitedStates";
@@ -189,6 +190,10 @@ const Home = () => {
           loading={loading}
           isStateVisited={isStateVisited}
         />
+        
+        <div className="mt-8">
+          <BadgesSection userId={userId} />
+        </div>
       </main>
       
       <Footer />

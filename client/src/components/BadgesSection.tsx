@@ -40,19 +40,30 @@ export function BadgesSection({ userId }: BadgesSectionProps) {
   // Fetch user badges
   const userBadgesQuery = useQuery({
     queryKey: ['/api/user-badges', userId],
-    queryFn: getQueryFn<{badge: Badge, userBadge: UserBadge}[]>({
-      on401: "returnNull"
-    }),
+    queryFn: async () => {
+      if (!userId) return [];
+      
+      const response = await fetch(`/api/user-badges/${userId}`);
+      if (!response.ok) {
+        console.error('Error fetching user badges:', response.statusText);
+        return [];
+      }
+      
+      return await response.json();
+    },
     enabled: !!userId,
   });
   
   // Check for new badges mutation
   const checkBadgesMutation = useMutation<BadgeResponse>({
     mutationFn: async () => {
-      const response = await apiRequest(`/api/check-badges/${userId}`, {
+      const response = await fetch(`/api/check-badges/${userId}`, {
         method: 'POST',
       });
-      return response as BadgeResponse;
+      if (!response.ok) {
+        throw new Error('Failed to check for badges');
+      }
+      return await response.json();
     },
     onSuccess: (data) => {
       if (data.newBadgesEarned) {
