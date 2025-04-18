@@ -311,63 +311,86 @@ export class DatabaseStorage implements IStorage {
     // Get user's visited states
     const userVisitedStates = await this.getVisitedStates(normalizedUserId);
     const visitedStatesCount = userVisitedStates.filter(state => state.visited).length;
+    const visitedStateIds = userVisitedStates
+      .filter(state => state.visited)
+      .map(state => state.stateId);
+    
+    console.log(`User ${normalizedUserId} has visited ${visitedStatesCount} states: ${visitedStateIds.join(', ')}`);
     
     // Get all badges user hasn't earned yet
-    const userBadgeIds = (await db.select({id: userBadges.badgeId})
-      .from(userBadges)
-      .where(eq(userBadges.userId, normalizedUserId)))
-      .map(row => row.id);
+    const userBadges = await this.getUserBadges(normalizedUserId);
+    const userBadgeIds = userBadges.map(ub => ub.badge.id);
     
     const allBadges = await this.getAllBadges();
     const unearnedBadges = allBadges.filter(badge => !userBadgeIds.includes(badge.id));
+    
+    console.log(`User has ${userBadgeIds.length} badges already, checking ${unearnedBadges.length} unearned badges`);
     
     // Check each badge criteria
     const newlyEarnedBadges: Badge[] = [];
     
     for (const badge of unearnedBadges) {
-      const criteria = badge.criteria as any; // Type as any for now
+      const criteria = badge.criteria as BadgeCriteria;
       
-      if (criteria.type === 'states_count' && visitedStatesCount >= criteria.value) {
-        // User has visited enough states to earn this badge
-        await this.awardBadgeToUser(normalizedUserId, badge.id, {
-          statesCount: visitedStatesCount,
-          earnedAt: new Date().toISOString()
-        });
-        newlyEarnedBadges.push(badge);
+      if (criteria.type === 'stateCount') {
+        // State count badge - check if user has visited enough states
+        if (visitedStatesCount >= criteria.count) {
+          console.log(`User earned "${badge.name}" badge (stateCount=${criteria.count})`);
+          await this.awardBadgeToUser(normalizedUserId, badge.id, {
+            statesCount: visitedStatesCount,
+            earnedAt: new Date().toISOString()
+          });
+          newlyEarnedBadges.push(badge);
+        }
       }
-      else if (criteria.type === 'region_complete') {
-        // Check if all states in a region are visited
-        const regionStates = criteria.value as string[];
-        const visitedRegionStates = userVisitedStates
-          .filter(vs => vs.visited && regionStates.includes(vs.stateId))
-          .map(vs => vs.stateId);
+      else if (criteria.type === 'regionComplete') {
+        // Region complete badge - check if all states in region visited
+        const regionStates = criteria.states;
+        const visitedRegionStates = visitedStateIds.filter(id => regionStates.includes(id));
         
         if (visitedRegionStates.length === regionStates.length) {
+          console.log(`User earned "${badge.name}" badge (completed region ${criteria.region})`);
           await this.awardBadgeToUser(normalizedUserId, badge.id, {
+            region: criteria.region,
             regionStates: regionStates,
             earnedAt: new Date().toISOString()
           });
           newlyEarnedBadges.push(badge);
         }
       }
-      else if (criteria.type === 'specific_states') {
-        // Check if specific states are visited
-        const requiredStates = criteria.value as string[];
-        const visitedRequiredStates = userVisitedStates
-          .filter(vs => vs.visited && requiredStates.includes(vs.stateId))
-          .map(vs => vs.stateId);
+      else if (criteria.type === 'specificStates') {
+        let badgeEarned = false;
         
-        if (requiredStates.every(state => visitedRequiredStates.includes(state))) {
+        // Specific states badge - check specific combinations
+        if (criteria.requireAll) {
+          // All states must be visited
+          const allVisited = criteria.states.every(state => visitedStateIds.includes(state));
+          if (allVisited) {
+            badgeEarned = true;
+          }
+        } 
+        else if (criteria.requireAtLeastOne && criteria.andStates && criteria.requireAtLeastOneFrom) {
+          // Must visit at least one from first group AND at least one from second group
+          const hasFirstGroup = criteria.states.some(state => visitedStateIds.includes(state));
+          const hasSecondGroup = criteria.andStates.some(state => visitedStateIds.includes(state));
+          
+          if (hasFirstGroup && hasSecondGroup) {
+            badgeEarned = true;
+          }
+        }
+        
+        if (badgeEarned) {
+          console.log(`User earned "${badge.name}" badge (specific states criteria)`);
           await this.awardBadgeToUser(normalizedUserId, badge.id, {
-            specificStates: requiredStates,
+            specificStates: criteria.states,
             earnedAt: new Date().toISOString()
           });
           newlyEarnedBadges.push(badge);
         }
       }
-      // Other criteria types can be implemented here
     }
     
+    console.log(`User earned ${newlyEarnedBadges.length} new badges`);
     return newlyEarnedBadges;
   }
 }

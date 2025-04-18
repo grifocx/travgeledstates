@@ -47,14 +47,14 @@ export function BadgesSection({ userId }: BadgesSectionProps) {
   });
   
   // Check for new badges mutation
-  const checkBadgesMutation = useMutation({
+  const checkBadgesMutation = useMutation<BadgeResponse>({
     mutationFn: async () => {
-      const response = await apiRequest<BadgeResponse>(`/api/check-badges/${userId}`, {
+      const response = await apiRequest(`/api/check-badges/${userId}`, {
         method: 'POST',
       });
-      return response;
+      return response as BadgeResponse;
     },
-    onSuccess: (data: BadgeResponse) => {
+    onSuccess: (data) => {
       if (data.newBadgesEarned) {
         // Show a toast for each new badge
         data.badges.forEach((badge: Badge) => {
