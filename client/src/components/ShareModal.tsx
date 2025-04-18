@@ -91,28 +91,20 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl }: ShareModalProps) => {
           } catch (innerErr) {
             console.error("ClipboardItem API failed:", innerErr);
             
-            // Fallback: try to open the image in a new tab for manual copying
-            const newTab = window.open();
-            if (newTab) {
-              newTab.document.write(`
-                <html>
-                  <head><title>Copy this image</title></head>
-                  <body style="margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f5f5f5;">
-                    <div style="text-align: center;">
-                      <h3>Right-click on the image and select "Copy Image"</h3>
-                      <img src="${mapImageUrl}" style="max-width: 100%; border: 1px solid #ccc;">
-                    </div>
-                  </body>
-                </html>
-              `);
-              
-              toast({
-                title: "Manual copy required",
-                description: "Please right-click the image in the new tab and select 'Copy Image'",
-              });
-            } else {
-              throw new Error("Could not open new tab for manual copying");
-            }
+            // Download fallback if copy fails
+            toast({
+              title: "Clipboard access denied",
+              description: "Using download instead. You can then share the downloaded image.",
+              duration: 5000
+            });
+            
+            // Trigger download automatically
+            const link = document.createElement("a");
+            link.href = mapImageUrl;
+            link.download = "my-usa-states-map.png";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
           }
         } else {
           throw new Error("Could not create blob from canvas");
@@ -169,46 +161,59 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl }: ShareModalProps) => {
           </div>
         )}
         
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            variant="default"
-            onClick={handleDownloadImage}
-            disabled={!mapImageUrl}
-            className="flex items-center justify-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Download
-          </Button>
+        <div className="space-y-3">
+          {/* Primary actions */}
+          <div className="flex space-x-3">
+            <Button
+              variant="default"
+              onClick={handleDownloadImage}
+              disabled={!mapImageUrl}
+              className="flex-1 flex items-center justify-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download Image
+            </Button>
+          </div>
           
-          <Button
-            variant="outline"
-            onClick={handleCopyToClipboard}
-            disabled={!mapImageUrl || isCopying}
-            className="flex items-center justify-center gap-2"
-          >
-            <Share2 className="h-4 w-4" />
-            {isCopying ? "Copying..." : "Copy to Clipboard"}
-          </Button>
+          {/* Secondary actions */}
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              variant="outline"
+              onClick={handleCopyToClipboard}
+              disabled={!mapImageUrl || isCopying}
+              className="flex items-center justify-center"
+              size="sm"
+            >
+              <Share2 className="h-4 w-4 mr-1" />
+              {isCopying ? "..." : "Copy"}
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="bg-[#1877F2] hover:bg-[#166fe5] text-white flex items-center justify-center"
+              onClick={handleShareFacebook}
+              disabled={!mapImageUrl}
+              size="sm"
+            >
+              <Facebook className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="bg-[#1DA1F2] hover:bg-[#1a94da] text-white flex items-center justify-center"
+              onClick={handleShareTwitter}
+              disabled={!mapImageUrl}
+              size="sm"
+            >
+              <Twitter className="h-4 w-4" />
+            </Button>
+          </div>
           
-          <Button
-            variant="outline"
-            className="bg-[#1877F2] hover:bg-[#166fe5] text-white flex items-center justify-center gap-2"
-            onClick={handleShareFacebook}
-            disabled={!mapImageUrl}
-          >
-            <Facebook className="h-4 w-4" />
-            Facebook
-          </Button>
-          
-          <Button
-            variant="outline"
-            className="bg-[#1DA1F2] hover:bg-[#1a94da] text-white flex items-center justify-center gap-2"
-            onClick={handleShareTwitter}
-            disabled={!mapImageUrl}
-          >
-            <Twitter className="h-4 w-4" />
-            Twitter
-          </Button>
+          {mapImageUrl && (
+            <p className="text-xs text-center text-gray-500 mt-2">
+              Download the image to share it on other platforms
+            </p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
