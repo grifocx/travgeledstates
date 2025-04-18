@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { seedBadges } from "./seed-badges";
 
 const app = express();
 // Increase JSON size limit to handle larger image payloads (50MB)
@@ -38,6 +39,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Seed initial badges data
+  try {
+    await seedBadges();
+  } catch (error) {
+    console.error("Error seeding badges:", error);
+  }
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

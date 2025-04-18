@@ -1,7 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertVisitedStateSchema, insertActivitySchema, insertSharedMapSchema } from "@shared/schema";
+import { 
+  insertVisitedStateSchema, 
+  insertActivitySchema, 
+  insertSharedMapSchema,
+  insertBadgeSchema, 
+  insertUserBadgeSchema 
+} from "@shared/schema";
 import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -177,6 +183,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/shared/:shareCode", (req, res) => {
     // Redirect to the frontend with the share code as a query parameter
     res.redirect(`/?share=${req.params.shareCode}`);
+  });
+  
+  // BADGE ROUTES
+  
+  // Get all badges
+  app.get("/api/badges", async (req, res) => {
+    try {
+      const badges = await storage.getAllBadges();
+      res.json(badges);
+    } catch (error) {
+      console.error("Error fetching badges:", error);
+      res.status(500).json({ message: "Failed to fetch badges", error: (error as Error).message });
+    }
+  });
+  
+  // Get badges by category
+  app.get("/api/badges/category/:category", async (req, res) => {
+    try {
+      const { category } = req.params;
+      const badges = await storage.getBadgesByCategory(category);
+      res.json(badges);
+    } catch (error) {
+      console.error(`Error fetching badges for category ${req.params.category}:`, error);
+      res.status(500).json({ message: "Failed to fetch badges by category", error: (error as Error).message });
+    }
+  });
+  
+  // Get a specific badge
+  app.get("/api/badges/:badgeId", async (req, res) => {
+    try {
+      const badgeId = parseInt(req.params.badgeId);
+      if (isNaN(badgeId)) {
+        return res.status(400).json({ message: "Invalid badge ID" });
+      }
+      
+      const badge = await storage.getBadgeById(badgeId);
+      if (!badge) {
+        return res.status(404).json({ message: "Badge not found" });
+      }
+      
+      res.json(badge);
+    } catch (error) {
+      console.error(`Error fetching badge ${req.params.badgeId}:`, error);
+      res.status(500).json({ message: "Failed to fetch badge", error: (error as Error).message });
+    }
+  });
+  
+  // Get user badges
+  app.get("/api/user-badges/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const userBadges = await storage.getUserBadges(userId);
+      res.json(userBadges);
+    } catch (error) {
+      console.error(`Error fetching badges for user ${req.params.userId}:`, error);
+      res.status(500).json({ message: "Failed to fetch user badges", error: (error as Error).message });
+    }
+  });
+  
+  // Check for new badges
+  app.post("/api/check-badges/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const newBadges = await storage.checkForNewBadges(userId);
+      
+      if (newBadges.length > 0) {
+        res.json({
+          newBadgesEarned: true,
+          badges: newBadges
+        });
+      } else {
+        res.json({
+          newBadgesEarned: false,
+          badges: []
+        });
+      }
+    } catch (error) {
+      console.error(`Error checking badges for user ${req.params.userId}:`, error);
+      res.status(500).json({ message: "Failed to check for new badges", error: (error as Error).message });
+    }
+  });
+  
+  // Directly award a badge to a user (admin/testing functionality)
+  app.post("/api/award-badge", async (req, res) => {
+    try {
+      const { userId, badgeId, metadata } = req.body;
+      
+      if (!userId || !badgeId) {
+        return res.status(400).json({ message: "userId and badgeId are required" });
+      }
+      
+      const userBadge = await storage.awardBadgeToUser(userId, parseInt(badgeId), metadata);
+      res.json(userBadge);
+    } catch (error) {
+      console.error("Error awarding badge:", error);
+      res.status(500).json({ message: "Failed to award badge", error: (error as Error).message });
+    }
   });
 
   const httpServer = createServer(app);
