@@ -1,4 +1,4 @@
-# USA State Tracker - Version 1.3.0
+# USA State Tracker - Version 1.3.2
 
 ## Overview
 The USA State Tracker is an interactive web application that allows users to visually track which states they have visited across the United States. This project provides a rich, interactive experience with a map-based visualization, user profiles, achievement badges, and data persistence.
@@ -132,6 +132,15 @@ The USA State Tracker is an interactive web application that allows users to vis
 - Progressive reveal of higher-tier badges as lower tiers are earned
 
 ## Release Notes
+
+### Version 1.3.2 (2025-04-18)
+- Code quality improvements and technical debt reduction:
+  - Added proper TypeScript interfaces for badge criteria evaluation
+  - Enhanced error handling in badge components with improved user feedback
+  - Fixed potential type safety issues in API responses
+  - Improved database access with better error handling
+  - Enhanced console logging for better debugging
+  - General code cleanup and minor bug fixes
 
 ### Version 1.3.0 (2025-04-18)
 - Enhanced visual identity with custom branding:

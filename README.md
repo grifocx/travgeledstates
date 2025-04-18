@@ -1,4 +1,4 @@
-# USA State Tracker v1.3.0
+# USA State Tracker v1.3.2
 
 An interactive web application to track, visualize, and gamify your journey across the United States.
 
