@@ -1,4 +1,4 @@
-# USA State Tracker - Version 0.9.0
+# USA State Tracker - Version 1.0.0
 
 ## Overview
 The USA State Tracker is an interactive web application that allows users to visually track which states they have visited across the United States. This project provides a rich, interactive experience with a map-based visualization, user profiles, and data persistence.
@@ -93,18 +93,20 @@ The USA State Tracker is an interactive web application that allows users to vis
 - Timestamps for activity tracking and sorting
 - Indexing for query performance
 
-## Known Issues
+## Release Notes
 
-### Map Color Persistence
-- Map state colors occasionally fail to update visually despite backend data being correctly saved
-- Multiple approaches implemented including:
-  - User ID normalization between client and server
-  - Force rendering with key-based component updates
-  - Local state management with react-query integration
-  - Improved error handling and validation
+### Version 1.0.0 (2025-04-18)
+- Fixed map color persistence issues with the following improvements:
+  - Added robust state ID handling with name-to-code mapping
+  - Enhanced state toggling in the UI with immediate visual feedback
+  - Addressed required parameters in API calls (visitedAt field)
+  - Improved error handling with descriptive user feedback
+  - Added consistent type checking and validation throughout the application
+- Enhanced UI with toast notifications for better user feedback
+- Optimized state data flow between components for improved performance
+- Added comprehensive error logging for easier debugging
 
-## Roadmap for Version 1.0
-- Fix map color persistence issues
+## Roadmap for Future Versions
 - Add user profile customization options
 - Implement goal setting for state visits
 - Enhance sharing capabilities with social media integration

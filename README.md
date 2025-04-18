@@ -1,4 +1,4 @@
-# USA State Tracker
+# USA State Tracker v1.0.0
 
 An interactive web application to track and visualize which US states you have visited.
 
@@ -92,6 +92,17 @@ npm run dev
 - **Backend**: Node.js, Express, Passport.js
 - **Database**: PostgreSQL with Drizzle ORM
 - **Visualization**: React Simple Maps
+
+## Latest Release - v1.0.0
+
+### Major Updates
+- Fixed state tracking functionality for complete UI/database synchronization
+- Improved state coloring persistence across sessions
+- Enhanced error handling throughout the application
+- Added robust state identification with name-to-code mapping
+- Optimized data flow for better performance
+
+For full details, see the [CHANGELOG.md](CHANGELOG.md) file.
 
 ## Contributing
 
