@@ -84,16 +84,22 @@ const Home = () => {
   }, [mapSectionRef]);
 
   const handleShare = async () => {
+    // Open the modal first to show loading state
     setShowShareModal(true);
-    const imageUrl = await captureMapAsImage();
+    setMapImageUrl(null); // Reset any existing image
     
-    if (!imageUrl) {
-      toast({
-        title: "Error",
-        description: "Could not capture map image. Please try again.",
-        variant: "destructive"
-      });
-    }
+    // Slight delay to ensure modal is fully open before capturing
+    setTimeout(async () => {
+      const imageUrl = await captureMapAsImage();
+      
+      if (!imageUrl) {
+        toast({
+          title: "Error",
+          description: "Could not capture map image. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }, 200);
   };
 
   const handleStateClick = (stateId: string) => {
