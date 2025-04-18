@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Header from "@/components/Header";
 import MapSection from "@/components/MapSection";
 import StateDashboard from "@/components/StateDashboard";
@@ -20,7 +20,9 @@ const Home = () => {
     toggleStateVisited, 
     resetAllStates,
     loading, 
-    stats 
+    stats,
+    isStateVisited,
+    localVisitedStatesMap
   } = useVisitedStates();
 
   // Debug logging

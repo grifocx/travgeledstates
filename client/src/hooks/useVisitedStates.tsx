@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Activity, State, VisitedState } from "@shared/schema";
@@ -98,12 +98,42 @@ export const useVisitedStates = () => {
     enabled: !!userId, // Only run query if userId is available
   });
   
-  // Toggle visited state mutation
+  // Direct local state management for visited states
+  const [localVisitedStates, setLocalVisitedStates] = useState<Map<string, boolean>>(new Map());
+  
+  // Initialize local state whenever visitedStates from API changes
+  useEffect(() => {
+    if (visitedStates.length > 0) {
+      const newMap = new Map<string, boolean>();
+      visitedStates.forEach(vs => {
+        newMap.set(vs.stateId, vs.visited);
+      });
+      setLocalVisitedStates(newMap);
+      console.log(`Updated local visited states map with ${newMap.size} entries from API`);
+    }
+  }, [visitedStates]);
+  
+  // Toggle visited state mutation with enhanced error handling
   const toggleVisitedMutation = useMutation({
     mutationFn: async ({ stateId, visited }: { stateId: string, visited: boolean }) => {
       const visitedAt = new Date().toISOString();
       
-      // First perform the optimistic update before the actual API call
+      // Update local state immediately for quick UI feedback
+      setLocalVisitedStates(prev => {
+        const newMap = new Map(prev);
+        newMap.set(stateId, visited);
+        
+        console.log(`Local state updated: ${stateId} is now ${visited ? 'VISITED' : 'NOT VISITED'}`);
+        console.log(`Local map now has ${newMap.size} entries`);
+        
+        // Force component update with our local state
+        const forceUpdate = queryClient.getQueryData<number>(['forceUpdate']) || 0;
+        queryClient.setQueryData(['forceUpdate'], forceUpdate + 1);
+        
+        return newMap;
+      });
+      
+      // Then perform optimistic update in React Query cache
       const optimisticVisitedState: VisitedState = {
         id: Math.floor(Math.random() * 1000000), // Temporary ID
         stateId,
@@ -113,7 +143,7 @@ export const useVisitedStates = () => {
         notes: null
       };
       
-      // Apply optimistic update immediately
+      // Apply optimistic update immediately to the React Query cache
       const cachedData = queryClient.getQueryData<VisitedState[]>([`/api/visited-states/${userId}`]) || [];
       const existingIndex = cachedData.findIndex(vs => vs.stateId === stateId);
       
@@ -121,36 +151,52 @@ export const useVisitedStates = () => {
       let newCacheData: VisitedState[];
       if (existingIndex >= 0) {
         newCacheData = [...cachedData];
-        newCacheData[existingIndex] = optimisticVisitedState;
+        newCacheData[existingIndex] = { ...newCacheData[existingIndex], visited };
       } else {
         newCacheData = [...cachedData, optimisticVisitedState];
       }
       
-      // Apply the optimistic update
+      // Apply the optimistic update to React Query cache
       queryClient.setQueryData([`/api/visited-states/${userId}`], newCacheData);
-      console.log("Applied optimistic update:", newCacheData);
+      console.log(`Applied optimistic update to cache: ${stateId} set to ${visited ? 'visited' : 'not visited'}`);
       
-      // Then make the actual API call
-      const response = await apiRequest("POST", "/api/visited-states/toggle", {
-        stateId,
-        userId,
-        visited,
-        visitedAt
-      });
-      return response.json();
+      // Make the actual API call
+      try {
+        const response = await apiRequest("POST", "/api/visited-states/toggle", {
+          stateId,
+          userId,
+          visited,
+          visitedAt
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        }
+        
+        return response.json();
+      } catch (error) {
+        console.error("API call failed:", error);
+        throw error;
+      }
     },
     onSuccess: (newVisitedState) => {
-      // The API call was successful, we can invalidate queries now
+      // The API call was successful, refresh the data
       queryClient.invalidateQueries({ queryKey: [`/api/visited-states/${userId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/activities/${userId}`] });
       
       // Show a toast notification
+      const stateName = states.find(s => s.stateId === newVisitedState.stateId)?.name || newVisitedState.stateId;
       toast({
         title: newVisitedState.visited ? "State marked as visited" : "State marked as unvisited",
-        description: `${states.find(s => s.stateId === newVisitedState.stateId)?.name || newVisitedState.stateId} has been updated.`,
+        description: `${stateName} has been updated.`,
       });
+      
+      console.log(`Successfully updated ${newVisitedState.stateId} to ${newVisitedState.visited ? 'visited' : 'not visited'}`);
     },
     onError: (error) => {
+      // Log the error
+      console.error("Error toggling state:", error);
+      
       // Revert the optimistic update on error
       queryClient.invalidateQueries({ queryKey: [`/api/visited-states/${userId}`] });
       
@@ -239,13 +285,61 @@ export const useVisitedStates = () => {
   // Loading state for component consumers
   const loading = statesLoading || visitedStatesLoading || activitiesLoading;
   
+  // Create augmented visitedStates that includes the local state
+  const augmentedVisitedStates = useMemo(() => {
+    // Start with the API-provided visited states
+    let result = [...visitedStates];
+    
+    // Add any states from local state that aren't in the API data
+    if (localVisitedStates.size > 0) {
+      localVisitedStates.forEach((isVisited, stateId) => {
+        const existingIndex = result.findIndex(vs => vs.stateId === stateId);
+        
+        if (existingIndex >= 0) {
+          // Update existing entry if it differs from local state
+          if (result[existingIndex].visited !== isVisited) {
+            result[existingIndex] = {
+              ...result[existingIndex],
+              visited: isVisited
+            };
+          }
+        } else {
+          // Add new entry from local state
+          result.push({
+            id: -1, // Temporary ID
+            stateId,
+            userId,
+            visited: isVisited,
+            visitedAt: new Date().toISOString(),
+            notes: null
+          });
+        }
+      });
+    }
+    
+    console.log(`Returning ${result.length} augmented visited states`);
+    return result;
+  }, [visitedStates, localVisitedStates, userId]);
+  
+  // Create a utility function to check if a state is visited
+  const isStateVisited = useCallback((stateId: string): boolean => {
+    // First check local state (most up-to-date)
+    if (localVisitedStates.has(stateId)) {
+      return localVisitedStates.get(stateId) ?? false;
+    }
+    // Fall back to API data
+    return visitedStates.some(vs => vs.stateId === stateId && vs.visited);
+  }, [localVisitedStates, visitedStates]);
+  
   return {
     states: states.length ? states : usaStatesData,
-    visitedStates,
+    visitedStates: augmentedVisitedStates,
     activities,
     toggleStateVisited,
     resetAllStates,
     loading,
     stats,
+    isStateVisited, // New utility function
+    localVisitedStatesMap: localVisitedStates, // For direct access if needed
   };
 };

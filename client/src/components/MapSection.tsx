@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { 
   ComposableMap,
   Geographies,
@@ -9,6 +9,7 @@ import { VisitedState, State } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Minus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Define TypeScript types for Geography data
 interface GeoFeature {
@@ -31,6 +32,7 @@ interface MapSectionProps {
   selectedState: string | null;
   toggleStateVisited: (stateId: string, visited: boolean) => void;
   loading: boolean;
+  isStateVisited?: (stateId: string) => boolean; // Optional utility function
 }
 
 const MapSection = ({ 
@@ -39,7 +41,8 @@ const MapSection = ({
   onStateClick, 
   selectedState, 
   toggleStateVisited,
-  loading 
+  loading,
+  isStateVisited: isStateVisitedProp // Rename to avoid conflict with state
 }: MapSectionProps) => {
   const [position, setPosition] = useState({ zoom: 1, coordinates: [0, 0] });
   const [mobileInfoVisible, setMobileInfoVisible] = useState(false);
