@@ -379,9 +379,17 @@ export class DatabaseStorage implements IStorage {
         
         if (criteriaType === 'statecount' || criteriaType === 'statescount') {
           // State count badge - check if user has visited enough states
-          console.log(`State count badge: ${badge.name}, required: ${criteria.count}, user has: ${visitedStatesCount}`);
-          if (visitedStatesCount >= criteria.count) {
-            console.log(`User earned "${badge.name}" badge (stateCount=${criteria.count})`);
+          // Note: Database uses 'value' but our code uses 'count'
+          const requiredCount = criteria.count || criteria.value;
+          
+          if (typeof requiredCount !== 'number') {
+            console.error(`State count badge ${badge.name} has invalid count:`, requiredCount);
+            continue;
+          }
+          
+          console.log(`State count badge: ${badge.name}, required: ${requiredCount}, user has: ${visitedStatesCount}`);
+          if (visitedStatesCount >= requiredCount) {
+            console.log(`User earned "${badge.name}" badge (stateCount=${requiredCount})`);
             await this.awardBadgeToUser(normalizedUserId, badge.id, {
               statesCount: visitedStatesCount,
               earnedAt: new Date().toISOString()
@@ -391,15 +399,27 @@ export class DatabaseStorage implements IStorage {
         }
         else if (criteriaType === 'regioncomplete') {
           // Region complete badge - check if all states in region visited
-          const regionStates = criteria.states;
+          // Note: Database uses 'value' but our code uses 'states'
+          let regionStates = criteria.states || criteria.value;
+          
+          if (!regionStates || !Array.isArray(regionStates)) {
+            console.error(`Region badge ${badge.name} has invalid states list:`, regionStates);
+            continue;
+          }
+          
+          // Create a new array to avoid potential undefined issues
+          regionStates = [...regionStates];
+          
           const visitedRegionStates = visitedStateIds.filter(id => regionStates.includes(id));
           
-          console.log(`Region badge: ${badge.name}, region: ${criteria.region}, required: ${regionStates.length}, user has: ${visitedRegionStates.length}`);
+          console.log(`Region badge: ${badge.name}, required: ${regionStates.length}, user has: ${visitedRegionStates.length}`);
+          console.log(`Region states: ${regionStates.join(', ')}`);
+          console.log(`Visited region states: ${visitedRegionStates.join(', ')}`);
+          console.log(`User visited states: ${visitedStateIds.join(', ')}`);
           
           if (visitedRegionStates.length === regionStates.length) {
-            console.log(`User earned "${badge.name}" badge (completed region ${criteria.region})`);
+            console.log(`User earned "${badge.name}" badge (completed region)`);
             await this.awardBadgeToUser(normalizedUserId, badge.id, {
-              region: criteria.region,
               regionStates: regionStates,
               earnedAt: new Date().toISOString()
             });
@@ -409,21 +429,33 @@ export class DatabaseStorage implements IStorage {
         else if (criteriaType === 'specificstates') {
           let badgeEarned = false;
           
-          // Specific states badge - check specific combinations
-          if (criteria.requireAll) {
-            // All states must be visited
-            const allVisited = criteria.states.every(state => visitedStateIds.includes(state));
-            console.log(`Specific states badge: ${badge.name}, required all: ${criteria.states.join(", ")}, all visited: ${allVisited}`);
-            if (allVisited) {
-              badgeEarned = true;
-            }
-          } 
-          else if (criteria.requireAtLeastOne && criteria.andStates && criteria.requireAtLeastOneFrom) {
+          // Note: Database uses 'value' but our code uses 'states'
+          let requiredStates = criteria.states || criteria.value;
+          
+          if (!requiredStates || !Array.isArray(requiredStates)) {
+            console.error(`Specific states badge ${badge.name} has invalid states list:`, requiredStates);
+            continue;
+          }
+          
+          // Create a new array to avoid potential undefined issues
+          requiredStates = [...requiredStates];
+          
+          // For simple specific states badges (just visit all in list)
+          const allVisited = requiredStates.every(state => visitedStateIds.includes(state));
+          console.log(`Specific states badge: ${badge.name}, required all: ${requiredStates.join(", ")}, all visited: ${allVisited}`);
+          
+          if (allVisited) {
+            badgeEarned = true;
+          }
+          
+          // These are for more complex badges with multiple state groups
+          // That we don't currently have in the database
+          if (!badgeEarned && criteria.requireAtLeastOne && criteria.andStates && criteria.requireAtLeastOneFrom) {
             // Must visit at least one from first group AND at least one from second group
-            const hasFirstGroup = criteria.states.some(state => visitedStateIds.includes(state));
+            const hasFirstGroup = requiredStates.some(state => visitedStateIds.includes(state));
             const hasSecondGroup = criteria.andStates.some(state => visitedStateIds.includes(state));
             
-            console.log(`Coast to coast badge check: has first group (${criteria.states.join(", ")}): ${hasFirstGroup}, has second group (${criteria.andStates.join(", ")}): ${hasSecondGroup}`);
+            console.log(`Complex badge check: has first group (${requiredStates.join(", ")}): ${hasFirstGroup}, has second group (${criteria.andStates.join(", ")}): ${hasSecondGroup}`);
             
             if (hasFirstGroup && hasSecondGroup) {
               badgeEarned = true;
@@ -433,7 +465,7 @@ export class DatabaseStorage implements IStorage {
           if (badgeEarned) {
             console.log(`User earned "${badge.name}" badge (specific states criteria)`);
             await this.awardBadgeToUser(normalizedUserId, badge.id, {
-              specificStates: criteria.states,
+              specificStates: requiredStates,
               earnedAt: new Date().toISOString()
             });
             newlyEarnedBadges.push(badge);
