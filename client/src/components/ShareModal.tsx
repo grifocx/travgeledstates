@@ -139,9 +139,11 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl, userId }: ShareModalProps) =
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Share Your Map</DialogTitle>
+          <DialogTitle>{isSharedView ? "Shared Map View" : "Share Your Map"}</DialogTitle>
           <DialogDescription>
-            Share your state tracking progress with friends and family!
+            {isSharedView 
+              ? "You're viewing a map shared by another user" 
+              : "Share your state tracking progress with friends and family!"}
           </DialogDescription>
         </DialogHeader>
         
@@ -162,7 +164,38 @@ const ShareModal = ({ isOpen, onClose, mapImageUrl, userId }: ShareModalProps) =
         )}
         
         <div className="space-y-3">
-          {!shareUrl ? (
+          {isSharedView ? (
+            <>
+              {/* Actions for shared view mode */}
+              <div className="grid gap-3">
+                <Button
+                  variant="default"
+                  onClick={handleDownloadImage}
+                  disabled={!mapImageUrl || isDownloading}
+                  className="flex items-center justify-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  {isDownloading ? "Downloading..." : "Download Image"}
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    window.history.pushState({}, "", "/");
+                    window.location.reload();
+                  }}
+                  className="flex items-center justify-center gap-2"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Create Your Own Map
+                </Button>
+              </div>
+              
+              <p className="text-xs text-center text-gray-500 mt-2">
+                Create and track your own visited states
+              </p>
+            </>
+          ) : !shareUrl ? (
             <>
               {/* Primary actions - before sharing */}
               <div className="grid gap-3">
