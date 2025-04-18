@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,10 +12,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserCircle, LogOut, Menu, X } from "lucide-react";
+import USAMapLogo from "./USAMapLogo";
+import GenerateFavicon from "./GenerateFavicon";
 
 const Header = () => {
   const { user, logoutMutation } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [logoAnimated, setLogoAnimated] = useState(false);
+
+  // Generate favicon on mount
+  useEffect(() => {
+    // Trigger logo animation after a delay
+    const timer = setTimeout(() => {
+      setLogoAnimated(true);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleLogout = () => {
     if (confirm("Are you sure you want to log out?")) {
@@ -34,10 +47,14 @@ const Header = () => {
 
   return (
     <header className="bg-white shadow sticky top-0 z-50">
+      {/* Favicon Generator - hidden */}
+      <GenerateFavicon />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <Link href="/">
+            <Link href="/" className="flex items-center gap-2">
+              <USAMapLogo size={32} animate={logoAnimated} className="text-primary" />
               <span className="text-2xl font-bold text-gray-800 hover:text-gray-600 transition-colors cursor-pointer">
                 USA States Tracker
               </span>
